@@ -40,6 +40,8 @@ h1 {
 .sidebar {
   position: sticky;
   top: 1rem;
+  width: 350px;
+  padding: 20px;
 }
 
 .player-list {
@@ -125,3 +127,24 @@ h1 {
 .player-card button:hover {
   background-color: #218838;
 }
+
+.upcoming-fixtures {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.fixture {
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.8em;
+  font-weight: bold;
+  color: #fff;
+}
+
+.difficulty-1 { background-color: #00ff00; } /* Not in use, but for completeness */
+.difficulty-2 { background-color: #01fcc4; color: #000; }
+.difficulty-3 { background-color: #f6a623; }
+.difficulty-4 { background-color: #d0021b; }
+.difficulty-5 { background-color: #9013fe; }

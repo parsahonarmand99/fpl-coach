@@ -15,6 +15,15 @@ const SQUAD_RULES = {
   }
 }
 
+const Fixture = ({ fixture }) => {
+  const difficultyClass = `difficulty-${fixture.difficulty}`;
+  return (
+    <div className={`fixture ${difficultyClass}`}>
+      {fixture.opponent} ({fixture.is_home ? 'H' : 'A'})
+    </div>
+  );
+};
+
 function App() {
   const [players, setPlayers] = useState([])
   const [teams, setTeams] = useState([])
@@ -144,6 +153,12 @@ function App() {
                   <p>Pts: {player.total_points}</p>
                   <p>£{(player.now_cost / 10).toFixed(1)}m</p>
                   <p>Form: {player.form}</p>
+                </div>
+                {console.log(player)}
+                <div className="upcoming-fixtures">
+                  {player.upcoming_fixtures && player.upcoming_fixtures.map((fixture, index) => (
+                    <Fixture key={index} fixture={fixture} />
+                  ))}
                 </div>
                 <button onClick={(e) => {
                   e.preventDefault(); // Prevent navigation when clicking the button

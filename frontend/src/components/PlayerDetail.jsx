@@ -56,7 +56,76 @@ const PlayerDetail = () => {
         <p><strong>Position:</strong> {playerData.position_name}</p>
         <p><strong>Birthdate:</strong> {playerData.date_of_birth}</p>
         <p><strong>Height:</strong> {playerData.height} cm</p>
+        <p><strong>Weight:</strong> {playerData.weight} kg</p>
       </div>
+
+      {playerData.form_stats && playerData.form_stats.length > 0 && (
+        <div className="form-stats">
+          <h2>Recent Form (Last 5 Games)</h2>
+          <div className="table-container">
+            <table className="form-table">
+              <thead>
+                <tr>
+                  <th>Opponent</th>
+                  <th>Date</th>
+                  <th>Mins</th>
+                  <th>G</th>
+                  <th>A</th>
+                  <th>YC</th>
+                  <th>RC</th>
+                  <th>Bonus</th>
+                  <th>BPS</th>
+                  <th>Pts</th>
+                  <th>xG</th>
+                  <th>xA</th>
+                  <th>xGI</th>
+                  <th>xGC</th>
+                  <th>Clean Sheets</th>
+                  <th>Goals Conceded</th>
+                  <th>Own Goals</th>
+                  <th>Penalties Saved</th>
+                  <th>Penalties Missed</th>
+                  <th>Saves</th>
+                  <th>Influence</th>
+                  <th>Creativity</th>
+                  <th>Threat</th>
+                  <th>ICT Index</th>
+                </tr>
+              </thead>
+              <tbody>
+                {playerData.form_stats.map(game => (
+                  <tr key={game.fixture_id}>
+                    <td>{game.fixture_name}</td>
+                    <td>{new Date(game.date).toLocaleDateString()}</td>
+                    <td>{game.minutes_played}</td>
+                    <td>{game.goals}</td>
+                    <td>{game.assists}</td>
+                    <td>{game.yellow_cards}</td>
+                    <td>{game.red_cards}</td>
+                    <td>{game.bonus}</td>
+                    <td>{game.bps}</td>
+                    <td>{game.total_points}</td>
+                    <td>{game.expected_goals}</td>
+                    <td>{game.expected_assists}</td>
+                    <td>{game.expected_goal_involvements}</td>
+                    <td>{game.expected_goals_conceded}</td>
+                    <td>{game.clean_sheets}</td>
+                    <td>{game.goals_conceded}</td>
+                    <td>{game.own_goals}</td>
+                    <td>{game.penalties_saved}</td>
+                    <td>{game.penalties_missed}</td>
+                    <td>{game.saves}</td>
+                    <td>{game.influence}</td>
+                    <td>{game.creativity}</td>
+                    <td>{game.threat}</td>
+                    <td>{game.ict_index}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {playerData.statistics && playerData.statistics.map(seasonStats => (
         <div key={seasonStats.id} className="season-stats">
