@@ -140,11 +140,9 @@ function App() {
               {positions.map(pos => <option key={pos} value={pos}>{pos}</option>)}
             </select>
           </div>
-          <div className="control-group">
-            <Link to="/ai-squad" className="ai-squad-button">
-                Build AI Squad
-            </Link>
-          </div>
+          <Link to="/ai-squad" className="ai-squad-button">
+              Build AI Squad
+          </Link>
         </div>
 
         <div className="player-list">
@@ -155,9 +153,9 @@ function App() {
                 <p className="player-team">{player.team_name}</p>
                 <p className="player-position">{player.position_name}</p>
                 <div className="player-stats">
-                  <p>Pts: {player.total_points}</p>
-                  <p>£{(player.now_cost / 10).toFixed(1)}m</p>
-                  <p>Form: {player.form}</p>
+                  <p data-label="Pts">{player.total_points}</p>
+                  <p data-label="Price">£{(player.now_cost / 10).toFixed(1)}m</p>
+                  <p data-label="Form">{player.form}</p>
                 </div>
                 <div className="upcoming-fixtures">
                   {player.upcoming_fixtures && player.upcoming_fixtures.map((fixture, index) => (
@@ -179,6 +177,7 @@ function App() {
           onRemovePlayer={handleRemovePlayer}
           budget={SQUAD_RULES.BUDGET}
           remainingBudget={remainingBudget}
+          squadRules={SQUAD_RULES}
         />
       </div>
     </div>

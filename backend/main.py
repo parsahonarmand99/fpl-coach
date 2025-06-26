@@ -4,7 +4,9 @@ from fastapi import FastAPI, HTTPException
 import requests
 from dotenv import load_dotenv
 from unidecode import unidecode
-from squad_builder import GeneticSquadBuilder
+from squad_builder import GeneticSquadBuilder, SquadAnalyzer
+from pydantic import BaseModel
+from typing import List
 
 load_dotenv()
 
@@ -13,6 +15,19 @@ app = FastAPI()
 SPORTMONKS_API_KEY = os.getenv("SPORTMONKS_API_KEY")
 SPORTMONKS_API_URL = "https://api.sportmonks.com/v3/football"
 PREMIER_LEAGUE_ID = 8 # Found via SportMonks documentation
+
+class Player(BaseModel):
+    id: int
+    web_name: str
+    now_cost: int
+    team: int
+    team_name: str
+    team_short_name: str
+    position_name: str
+    ai_score: float
+
+class Squad(BaseModel):
+    squad: List[Player]
 
 @app.get("/")
 def read_root():
@@ -107,6 +122,7 @@ def get_players_data():
 
     for player in players:
         player['team_name'] = teams.get(player['team'], {}).get('name')
+        player['team_short_name'] = teams.get(player['team'], {}).get('short_name')
         player['position_name'] = positions.get(player['element_type'])
         player['upcoming_fixtures'] = team_fixtures.get(player['team'], [])
 
@@ -220,6 +236,29 @@ def get_ai_squad():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/analyze-squad")
+def analyze_squad_endpoint(squad_data: Squad):
+    try:
+        all_players = get_players_data()
+        user_squad_list = [p.dict() for p in squad_data.squad]
+
+        analyzer = SquadAnalyzer(
+            user_squad=user_squad_list,
+            all_players=all_players
+        )
+        
+        captain = analyzer.suggest_captain()
+        transfers = analyzer.suggest_transfers()
+        
+        return {
+            "captain_suggestion": captain,
+            "suggested_transfers": transfers
+        }
+    except Exception as e:
+        # Log the exception for debugging
+        print(f"Error in squad analysis: {e}")
+        raise HTTPException(status_code=500, detail="An unexpected error occurred during analysis.")
 
 @app.get("/api/player/{player_id}")
 def get_player_details(player_id: int):

@@ -26,156 +26,193 @@ h1 {
   line-height: 1.1;
 }
 
+/* === Main Layout === */
 .App {
   display: grid;
-  grid-template-columns: 3fr 1fr;
+  grid-template-columns: 1fr;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
   gap: 2rem;
-  align-items: flex-start;
+}
+
+@media (min-width: 1024px) {
+  .App {
+    grid-template-columns: 3fr 1fr;
+  }
 }
 
 .main-content {
-  max-width: 100%;
+  background-color: var(--fpl-purple);
+  padding: 2.5rem;
+  border-radius: 8px;
+}
+
+.main-content > h1 {
+  margin-top: 0;
+  margin-bottom: 2rem;
 }
 
 .sidebar {
   position: sticky;
   top: 1rem;
-  width: 350px;
-  padding: 20px;
-}
-
-.player-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
-}
-
-.player-card {
-  border: 1px solid #ddd;
+  background-color: var(--fpl-purple);
+  padding: 1.5rem;
   border-radius: 8px;
-  padding: 1rem;
-  background-color: #333;
+  border: 1px solid var(--fpl-border);
 }
 
-.player-card h2 {
-  font-size: 1.2rem;
-  margin-bottom: 0.5rem;
-}
-
-.player-card p {
-  margin: 0;
-}
-
+/* === Controls / Filters === */
 .controls {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem 2rem;
+  margin-bottom: 3rem;
+  background-color: var(--fpl-purple-dark);
+  padding: 2rem;
+  border-radius: 8px;
 }
 
 .control-group {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
 }
 
 .control-group label {
-  margin-bottom: 0.5rem;
   font-size: 0.9rem;
-  color: #ccc;
+  color: var(--fpl-text-secondary);
+  margin-bottom: 0.5rem;
 }
 
 .control-group select,
 .control-group input {
-  padding: 0.5rem;
+  padding: 0.8rem;
   border-radius: 4px;
-  border: 1px solid #555;
-  background-color: #333;
-  color: white;
+  border: 1px solid var(--fpl-border);
+  background-color: var(--fpl-purple-light);
+  color: var(--fpl-text-primary);
+  font-weight: bold;
+}
+
+.ai-squad-button {
+  grid-column: 1 / 2;
+  background: var(--fpl-green);
+  color: var(--fpl-purple-dark);
+  font-weight: bold;
+  font-size: 1rem;
+  padding: 0.8rem;
+  text-decoration: none;
+  text-align: center;
+  border-radius: 4px;
+  transition: filter 0.2s ease;
+}
+.ai-squad-button:hover {
+  filter: brightness(1.1);
+  color: var(--fpl-purple-dark);
+}
+
+
+/* === Player List & Cards === */
+.player-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 2rem;
+}
+
+.player-card-link {
+  text-decoration: none;
+}
+
+.player-card {
+  background-color: var(--fpl-purple-dark);
+  border: 1px solid var(--fpl-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.player-card h2 {
+  font-size: 1.5rem;
+  margin: 0 0 0.25rem 0;
+  color: var(--fpl-text-primary);
 }
 
 .player-team {
-  font-weight: bold;
-  color: #a0a0a0;
+  font-size: 1rem;
+  color: var(--fpl-text-secondary);
+  margin-bottom: 1rem;
 }
 
 .player-position {
-  font-style: italic;
-  color: #a0a0a0;
-  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  color: var(--fpl-green);
+  margin-bottom: 1rem;
 }
 
 .player-stats {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 1rem;
-  font-size: 0.9rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  text-align: center;
+  gap: 0.5rem;
+  margin: auto 0 1.5rem 0;
+}
+.player-stats p {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+.player-stats p::before {
+  content: attr(data-label);
+  display: block;
+  font-size: 0.8rem;
+  font-weight: normal;
+  color: var(--fpl-text-secondary);
+  margin-bottom: 0.25rem;
 }
 
 .player-card button {
-  margin-top: 1rem;
-  padding: 0.5rem 1rem;
-  background-color: #28a745;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
   width: 100%;
-}
-
-.player-card button:hover {
-  background-color: #218838;
+  margin-top: auto;
 }
 
 .upcoming-fixtures {
   display: flex;
-  justify-content: center;
-  gap: 5px;
-  margin-top: 10px;
+  gap: 4px;
+  margin-bottom: 1rem;
 }
 
 .fixture {
-  padding: 2px 6px;
+  flex: 1;
+  padding: 5px;
   border-radius: 3px;
   font-size: 0.8em;
   font-weight: bold;
-  color: #fff;
-}
-
-.difficulty-1 { background-color: #00ff00; } /* Not in use, but for completeness */
-.difficulty-2 { background-color: #01fcc4; color: #000; }
-.difficulty-3 { background-color: #f6a623; }
-.difficulty-4 { background-color: #d0021b; }
-.difficulty-5 { background-color: #9013fe; }
-
-.ai-squad-button {
-  display: block;
-  padding: 0.5rem 1rem;
-  background-color: #5e2a86; /* A nice purple */
-  color: white;
+  color: var(--fpl-purple-dark);
   text-align: center;
-  border-radius: 4px;
-  text-decoration: none;
-  font-weight: bold;
-  border: none;
-  cursor: pointer;
-  align-self: center; /* Center it within the flex column */
 }
 
-.ai-squad-button:hover {
-  background-color: #4a2169;
+.difficulty-1, .difficulty-2 { background-color: var(--fpl-green); }
+.difficulty-3 { background-color: #f6a623; color: white;}
+.difficulty-4 { background-color: var(--fpl-pink); color: white;}
+.difficulty-5 { background-color: var(--fpl-purple); border: 1px solid #fff; color: #fff;}
+
+/* === AI Squad Page Specifics === */
+.single-column-layout {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.single-column-layout .main-content {
+  padding: 2rem;
 }
 
 .back-button {
   display: inline-block;
   margin-bottom: 2rem;
-  color: #a0a0a0;
-  text-decoration: none;
-}
-
-.back-button:hover {
-  color: white;
+  font-weight: bold;
 }
 
 .squad-controls {
@@ -183,86 +220,46 @@ h1 {
   margin-bottom: 2rem;
 }
 
-.squad-controls button {
-  padding: 0.75rem 1.5rem;
-  font-size: 1.1em;
-  background-color: #28a745;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.squad-controls button:disabled {
-  background-color: #555;
-  cursor: not-allowed;
-}
-
 .loading-message, .error-message {
   text-align: center;
-  font-size: 1.2em;
-  margin: 3rem 0;
+  font-size: 1.2rem;
+  padding: 2rem;
+  background-color: var(--fpl-purple-dark);
+  border-radius: 8px;
 }
-
 .error-message {
-    color: #d0021b;
+  color: var(--fpl-pink);
 }
 
-/* Layout override for single-column pages like the AI Squad Builder */
-.single-column-layout {
-    display: block;
-}
-
-.single-column-layout .main-content {
-    max-width: 800px; /* Match the pitch width for a clean look */
-    margin: 0 auto;
-}
-
-/* Squad Info Styling */
 .squad-info {
-    background-color: #333;
-    border-radius: 8px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    border: 1px solid #555;
+  background-color: var(--fpl-purple-dark);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  text-align: center;
 }
-
-.formation-info {
-    text-align: center;
-    margin-bottom: 1.5rem;
-}
-
 .formation-info h3 {
-    margin: 0;
-    color: #28a745;
-    font-size: 1.8rem;
-    font-weight: bold;
+  color: var(--fpl-green);
+  font-size: 1.8rem;
+  margin: 0;
 }
 
 .squad-stats {
-    display: flex;
-    justify-content: space-around;
-    gap: 2rem;
-    flex-wrap: wrap;
+  display: flex;
+  justify-content: space-around;
+  margin-top: 1rem;
 }
-
 .stat-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
+  text-align: center;
 }
-
 .stat-label {
-    font-size: 0.9rem;
-    color: #a0a0a0;
-    margin-bottom: 0.5rem;
+  display: block;
+  color: var(--fpl-text-secondary);
+  font-size: 0.9rem;
 }
-
 .stat-value {
-    font-size: 1.4rem;
-    font-weight: bold;
-    color: white;
+  font-size: 1.2rem;
+  font-weight: bold;
 }
 
 /* Responsive adjustments */

@@ -1,5 +1,6 @@
 import random
 from collections import Counter
+from typing import List, Dict, Any
 
 SQUAD_RULES = {
     "TOTAL_PLAYERS": 15,
@@ -258,4 +259,71 @@ class GeneticSquadBuilder:
         final_fitness_scores = [(self._calculate_fitness(squad), squad) for squad in population if squad]
         final_fitness_scores.sort(key=lambda x: x[0], reverse=True)
         
-        return final_fitness_scores[0][1] 
+        return final_fitness_scores[0][1]
+
+class SquadAnalyzer:
+    def __init__(self, user_squad: List[Dict[str, Any]], all_players: List[Dict[str, Any]]):
+        self.user_squad = user_squad
+        self.user_squad_ids = {p['id'] for p in user_squad}
+        self.all_players = [p for p in all_players if p['id'] not in self.user_squad_ids]
+        self.squad_cost = sum(p['now_cost'] for p in user_squad)
+        self.budget = 1000 # Use the total budget (100.0m * 10)
+
+    def suggest_captain(self):
+        """Suggests the player with the highest AI score as captain."""
+        return max(self.user_squad, key=lambda p: p.get('ai_score', 0))
+
+    def suggest_transfers(self, num_suggestions=5):
+        """Finds the best unique single transfers to improve the squad's AI score."""
+        potential_transfers = []
+
+        for player_out in self.user_squad:
+            # Calculate the budget we would have for a replacement
+            new_budget = self.budget - (self.squad_cost - player_out['now_cost'])
+            
+            for player_in in self.all_players:
+                # Basic checks: same position, affordable
+                if player_in['position_name'] != player_out['position_name']:
+                    continue
+                if player_in['now_cost'] > new_budget:
+                    continue
+
+                # Check team constraint: can't have more than 3 from the same team
+                team_counts = {}
+                for p in self.user_squad:
+                    if p['id'] != player_out['id']:
+                      team_counts[p['team']] = team_counts.get(p['team'], 0) + 1
+                
+                team_counts[player_in['team']] = team_counts.get(player_in['team'], 0) + 1
+                if team_counts[player_in['team']] > 3:
+                    continue
+
+                # This is a valid transfer, calculate the benefit
+                score_gain = player_in.get('ai_score', 0) - player_out.get('ai_score', 0)
+                if score_gain > 0:
+                    potential_transfers.append({
+                        "player_out": player_out,
+                        "player_in": player_in,
+                        "score_gain": score_gain,
+                    })
+        
+        # Sort by the highest score gain
+        potential_transfers.sort(key=lambda x: x['score_gain'], reverse=True)
+        
+        # Filter to get unique 1-to-1 suggestions
+        final_suggestions = []
+        used_player_ids = set()
+
+        for transfer in potential_transfers:
+            player_out_id = transfer['player_out']['id']
+            player_in_id = transfer['player_in']['id']
+
+            if player_out_id not in used_player_ids and player_in_id not in used_player_ids:
+                final_suggestions.append(transfer)
+                used_player_ids.add(player_out_id)
+                used_player_ids.add(player_in_id)
+            
+            if len(final_suggestions) >= num_suggestions:
+                break
+        
+        return final_suggestions 

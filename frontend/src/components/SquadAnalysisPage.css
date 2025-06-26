@@ -1,0 +1,111 @@
+.analysis-container {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 2rem;
+    color: var(--fpl-text-primary);
+}
+
+.analysis-container.loading,
+.analysis-container.error {
+    text-align: center;
+    background-color: var(--fpl-purple);
+    border-radius: 8px;
+    padding: 3rem;
+}
+
+.analysis-container h1 {
+    margin-bottom: 2rem;
+}
+
+.analysis-section h2 {
+    font-size: 1.8rem;
+    color: var(--fpl-green);
+    margin: 2rem 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--fpl-border);
+}
+
+.suggestion-card {
+    background-color: var(--fpl-purple-dark);
+    border: 1px solid var(--fpl-border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.captain-card {
+    text-align: center;
+}
+.captain-name {
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 0;
+}
+.captain-team {
+    font-size: 1.2rem;
+    color: var(--fpl-text-secondary);
+    margin: 0.25rem 0 0 0;
+}
+
+.transfer-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+}
+
+.transfer-player-out,
+.transfer-player-in,
+.score-gain {
+    text-align: center;
+    flex: 1;
+}
+
+.transfer-arrow {
+    font-size: 2.5rem;
+    color: var(--fpl-green);
+}
+
+.label {
+    font-size: 0.9rem;
+    color: var(--fpl-text-secondary);
+    margin-bottom: 0.5rem;
+}
+.player-name {
+    font-size: 1.4rem;
+    font-weight: bold;
+    margin: 0;
+}
+.team-name {
+    font-size: 1rem;
+    color: var(--fpl-text-secondary);
+    margin: 0.25rem 0 0 0;
+}
+.score-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--fpl-green);
+    margin: 0;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 2rem;
+  font-weight: bold;
+}
+
+/* Loading Spinner */
+.spinner {
+    border: 5px solid rgba(255, 255, 255, 0.2);
+    border-top: 5px solid var(--fpl-green);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 2rem auto 0;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+} 

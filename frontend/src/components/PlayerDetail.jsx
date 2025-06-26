@@ -49,19 +49,34 @@ const PlayerDetail = () => {
     <div className="player-detail-container">
       <div className="player-header">
         <img src={playerData.image_path} alt={playerData.display_name} className="player-image" />
-        <h1>{playerData.display_name}</h1>
+        <div className="player-header-info">
+          <h1>{playerData.display_name}</h1>
+          <p>{playerData.position_name}</p>
+        </div>
       </div>
+      <h2 className="section-title">Player Info</h2>
       <div className="player-bio">
-        <p><strong>Full Name:</strong> {playerData.name}</p>
-        <p><strong>Position:</strong> {playerData.position_name}</p>
-        <p><strong>Birthdate:</strong> {playerData.date_of_birth}</p>
-        <p><strong>Height:</strong> {playerData.height} cm</p>
-        <p><strong>Weight:</strong> {playerData.weight} kg</p>
+        <div className="player-bio-item">
+          <strong>Full Name</strong>
+          {playerData.name}
+        </div>
+        <div className="player-bio-item">
+          <strong>Date of Birth</strong>
+          {playerData.date_of_birth}
+        </div>
+        <div className="player-bio-item">
+          <strong>Height</strong>
+          {playerData.height ? `${playerData.height} cm` : 'N/A'}
+        </div>
+        <div className="player-bio-item">
+          <strong>Weight</strong>
+          {playerData.weight ? `${playerData.weight} kg` : 'N/A'}
+        </div>
       </div>
 
       {playerData.form_stats && playerData.form_stats.length > 0 && (
-        <div className="form-stats">
-          <h2>Recent Form (Last 5 Games)</h2>
+        <>
+          <h2 className="section-title">Recent Form (Last 5 Games)</h2>
           <div className="table-container">
             <table className="form-table">
               <thead>
@@ -124,12 +139,12 @@ const PlayerDetail = () => {
               </tbody>
             </table>
           </div>
-        </div>
+        </>
       )}
 
       {playerData.statistics && playerData.statistics.map(seasonStats => (
         <div key={seasonStats.id} className="season-stats">
-          <h2>
+          <h2 className="section-title">
             {seasonStats.season ? seasonStats.season.name : seasonStats.season_id}
             {seasonStats.season && seasonStats.season.league && ` - ${seasonStats.season.league.name}`}
           </h2>
