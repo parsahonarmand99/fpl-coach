@@ -237,6 +237,22 @@ def get_ai_squad():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/random-squad")
+async def get_random_squad():
+    """
+    Generates and returns a single, valid, randomized FPL squad.
+    """
+    try:
+        all_players = get_players_data()
+        builder = GeneticSquadBuilder(players=all_players)
+        squad = builder.create_random_squad()
+        if squad is None:
+            raise HTTPException(status_code=500, detail="Failed to generate a random squad after several attempts.")
+        return squad
+    except Exception as e:
+        print(f"An unexpected error occurred in /api/random-squad: {e}")
+        raise HTTPException(status_code=500, detail="An internal server error occurred while generating a random squad.")
+
 @app.post("/api/analyze-squad")
 def analyze_squad_endpoint(squad_data: Squad):
     try:

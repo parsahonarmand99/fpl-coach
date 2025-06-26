@@ -1,6 +1,7 @@
 import random
 from collections import Counter
 from typing import List, Dict, Any
+from pydantic import BaseModel
 
 SQUAD_RULES = {
     "TOTAL_PLAYERS": 15,
@@ -109,6 +110,10 @@ class GeneticSquadBuilder:
                 return squad
             attempts += 1
         return None # Return None if we failed to create a valid squad
+
+    def create_random_squad(self):
+        """Public method to create a single, valid, random squad."""
+        return self._create_random_squad()
 
     def _calculate_fitness(self, squad):
         """
@@ -262,55 +267,66 @@ class GeneticSquadBuilder:
         return final_fitness_scores[0][1]
 
 class SquadAnalyzer:
+    """
+    Analyzes a user's squad to provide suggestions for captaincy and transfers.
+    """
     def __init__(self, user_squad: List[Dict[str, Any]], all_players: List[Dict[str, Any]]):
         self.user_squad = user_squad
+        self.all_players = all_players
         self.user_squad_ids = {p['id'] for p in user_squad}
-        self.all_players = [p for p in all_players if p['id'] not in self.user_squad_ids]
-        self.squad_cost = sum(p['now_cost'] for p in user_squad)
-        self.budget = 1000 # Use the total budget (100.0m * 10)
+        
+        # Pre-compute properties for efficient calculations
+        self.squad_budget = sum(p['now_cost'] / 10 for p in user_squad)
+        self.team_counts = Counter(p['team'] for p in user_squad)
+        
+        # Create a map of players by position for faster lookups
+        self.player_map_by_pos = {pos: [] for pos in SQUAD_RULES["POSITIONS"].keys()}
+        for p in self.all_players:
+            pos_name = p.get('position_name')
+            if pos_name in self.player_map_by_pos:
+                self.player_map_by_pos[pos_name].append(p)
 
     def suggest_captain(self):
         """Suggests the player with the highest AI score as captain."""
         return max(self.user_squad, key=lambda p: p.get('ai_score', 0))
 
     def suggest_transfers(self, num_suggestions=5):
-        """Finds the best unique single transfers to improve the squad's AI score."""
+        """
+        Suggests the top N unique transfers for the user's squad.
+        It finds the best possible 1-for-1 player swaps, ensuring no player
+        is involved in more than one transfer suggestion.
+        """
         potential_transfers = []
 
-        for player_out in self.user_squad:
-            # Calculate the budget we would have for a replacement
-            new_budget = self.budget - (self.squad_cost - player_out['now_cost'])
+        # First, generate all possible valid transfers
+        for i, player_out in enumerate(self.user_squad):
+            candidate_pool = self.player_map_by_pos[player_out['position_name']]
             
-            for player_in in self.all_players:
-                # Basic checks: same position, affordable
-                if player_in['position_name'] != player_out['position_name']:
-                    continue
-                if player_in['now_cost'] > new_budget:
+            for player_in in candidate_pool:
+                if player_in['id'] in self.user_squad_ids:
                     continue
 
-                # Check team constraint: can't have more than 3 from the same team
-                team_counts = {}
-                for p in self.user_squad:
-                    if p['id'] != player_out['id']:
-                      team_counts[p['team']] = team_counts.get(p['team'], 0) + 1
-                
-                team_counts[player_in['team']] = team_counts.get(player_in['team'], 0) + 1
-                if team_counts[player_in['team']] > 3:
+                new_budget = self.squad_budget - (player_out['now_cost'] / 10) + (player_in['now_cost'] / 10)
+                if new_budget > SQUAD_RULES['BUDGET']:
                     continue
 
-                # This is a valid transfer, calculate the benefit
+                new_team_counts = self.team_counts.copy()
+                new_team_counts[player_out['team']] -= 1
+                if new_team_counts.get(player_in['team'], 0) >= SQUAD_RULES['PLAYERS_PER_TEAM']:
+                    continue
+
                 score_gain = player_in.get('ai_score', 0) - player_out.get('ai_score', 0)
                 if score_gain > 0:
                     potential_transfers.append({
                         "player_out": player_out,
                         "player_in": player_in,
-                        "score_gain": score_gain,
+                        "score_gain": score_gain
                     })
         
-        # Sort by the highest score gain
+        # Sort all potential transfers by the score gain
         potential_transfers.sort(key=lambda x: x['score_gain'], reverse=True)
-        
-        # Filter to get unique 1-to-1 suggestions
+
+        # Now, pick the best transfers while ensuring players are not reused
         final_suggestions = []
         used_player_ids = set()
 
@@ -326,4 +342,11 @@ class SquadAnalyzer:
             if len(final_suggestions) >= num_suggestions:
                 break
         
-        return final_suggestions 
+        return final_suggestions
+
+class FPLData(BaseModel):
+    """Pydantic model for validating the basic FPL data structure."""
+    events: List[Any]
+    teams: List[Any]
+    elements: List[Any]
+    element_types: List[Any] 

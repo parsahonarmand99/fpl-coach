@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, Link } from 'react-router-dom';
+import Pitch from './Pitch';
 import './SquadAnalysisPage.css';
 
 const SquadAnalysisPage = () => {
@@ -8,37 +9,56 @@ const SquadAnalysisPage = () => {
     const [analysis, setAnalysis] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [newSquad, setNewSquad] = useState([]);
+    const [highlightedIds, setHighlightedIds] = useState({ out: [], in: [] });
 
-    useEffect(() => {
+    const fetchAnalysis = useCallback(async () => {
         if (!squad) {
             setError("No squad data found. Please go back and build a squad first.");
             setLoading(false);
             return;
         }
 
-        const fetchAnalysis = async () => {
-            try {
-                const response = await fetch('/api/analyze-squad', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ squad }),
-                });
-                if (!response.ok) {
-                    const errData = await response.json();
-                    throw new Error(errData.detail || "Failed to get analysis.");
-                }
-                const data = await response.json();
-                setAnalysis(data);
+        setLoading(true);
+        setError(null);
 
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setLoading(false);
+        try {
+            const response = await fetch('/api/analyze-squad', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ squad }),
+            });
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.detail || "Failed to get analysis.");
             }
-        };
+            const data = await response.json();
+            setAnalysis(data);
 
-        fetchAnalysis();
+            // --- Construct the new squad and highlighted players ---
+            let tempSquad = [...squad];
+            const outIds = data.suggested_transfers.map(t => t.player_out.id);
+            const inIds = data.suggested_transfers.map(t => t.player_in.id);
+            
+            const playersToRemove = new Set(outIds);
+            const playersToAdd = data.suggested_transfers.map(t => t.player_in);
+
+            tempSquad = tempSquad.filter(p => !playersToRemove.has(p.id));
+            tempSquad.push(...playersToAdd);
+
+            setNewSquad(tempSquad);
+            setHighlightedIds({ out: outIds, in: inIds });
+            
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
     }, [squad]);
+
+    useEffect(() => {
+        fetchAnalysis();
+    }, [fetchAnalysis]);
 
     if (loading) {
         return (
@@ -73,6 +93,17 @@ const SquadAnalysisPage = () => {
         <div className="analysis-container">
             <Link to="/" className="back-link">&larr; Back to Home</Link>
             <h1>Squad Analysis & Suggestions</h1>
+            <button onClick={fetchAnalysis} className="reevaluate-button" disabled={loading}>Re-evaluate</button>
+            <div className="side-by-side-container">
+                <div className="pitch-wrapper">
+                    <h3>Your Current Squad</h3>
+                    <Pitch squad={squad} highlightedPlayers={highlightedIds.out} highlightColor="red" grayscaleUnchanged={true}/>
+                </div>
+                <div className="pitch-wrapper">
+                    <h3>Suggested Squad</h3>
+                    <Pitch squad={newSquad} highlightedPlayers={highlightedIds.in} highlightColor="purple" grayscaleUnchanged={true}/>
+                </div>
+            </div>
 
             <div className="analysis-section">
                 <h2>Captaincy Pick</h2>
@@ -103,6 +134,11 @@ const SquadAnalysisPage = () => {
                         </div>
                     </div>
                 ))}
+                 {analysis.suggested_transfers.length === 0 && (
+                    <div className="suggestion-card">
+                        <p>No immediate transfers suggested. Your squad is looking strong!</p>
+                    </div>
+                )}
             </div>
         </div>
     );

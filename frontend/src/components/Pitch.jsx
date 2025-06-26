@@ -2,18 +2,20 @@ import React from 'react';
 import PlayerOnPitch from './PlayerOnPitch';
 import './Pitch.css';
 
-const Pitch = ({ starting_11, bench: benchPlayers }) => {
-  if (!starting_11 || starting_11.length === 0) {
+const Pitch = ({ squad, starting_11, bench: benchPlayers, highlightedPlayers = [], highlightColor = 'green', grayscaleUnchanged = false }) => {
+  const playersToShow = squad || starting_11;
+
+  if (!playersToShow || playersToShow.length === 0) {
     return null;
   }
 
   // This object will hold the players for each position line
-  const starters = { GKP: [], DEF: [], MID: [], FWD: [] };
+  const positionGroups = { GKP: [], DEF: [], MID: [], FWD: [] };
 
-  // Group the starting 11 by their positions
-  for (const player of starting_11) {
-    if (starters[player.position_name]) {
-      starters[player.position_name].push(player);
+  // Group the players to show by their positions
+  for (const player of playersToShow) {
+    if (positionGroups[player.position_name]) {
+      positionGroups[player.position_name].push(player);
     }
   }
 
@@ -22,7 +24,19 @@ const Pitch = ({ starting_11, bench: benchPlayers }) => {
     if (players.length === 0) return null;
     return (
       <div className="pitch-row">
-        {players.map(player => <PlayerOnPitch key={player.id} player={player} />)}
+        {players.map(player => {
+            const isHighlighted = highlightedPlayers.includes(player.id);
+            const shouldGrayscale = grayscaleUnchanged && !isHighlighted;
+            return (
+                <PlayerOnPitch 
+                    key={player.id} 
+                    player={player}
+                    isHighlighted={isHighlighted}
+                    highlightColor={highlightColor}
+                    grayscale={shouldGrayscale}
+                />
+            )
+        })}
       </div>
     );
   };
@@ -31,18 +45,20 @@ const Pitch = ({ starting_11, bench: benchPlayers }) => {
     <div className="pitch-container">
       <div className="pitch">
         {/* Render each position group in its own row */}
-        {renderPositionRow(starters.GKP)}
-        {renderPositionRow(starters.DEF)}
-        {renderPositionRow(starters.MID)}
-        {renderPositionRow(starters.FWD)}
+        {renderPositionRow(positionGroups.GKP)}
+        {renderPositionRow(positionGroups.DEF)}
+        {renderPositionRow(positionGroups.MID)}
+        {renderPositionRow(positionGroups.FWD)}
       </div>
-      <div className="bench">
-        <h3>Bench</h3>
-        <div className="bench-players">
-            {/* Render the bench players */}
-            {benchPlayers && benchPlayers.map(player => <PlayerOnPitch key={player.id} player={player} />)}
-        </div>
-      </div>
+      {benchPlayers && benchPlayers.length > 0 && (
+          <div className="bench">
+            <h3>Bench</h3>
+            <div className="bench-players">
+                {/* Render the bench players */}
+                {benchPlayers.map(player => <PlayerOnPitch key={player.id} player={player} />)}
+            </div>
+          </div>
+      )}
     </div>
   );
 };

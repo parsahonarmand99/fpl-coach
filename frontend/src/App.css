@@ -94,8 +94,17 @@ h1 {
   font-weight: bold;
 }
 
+.ai-buttons {
+  grid-column: 2 / -1;
+  display: flex;
+  align-items: stretch;
+  gap: 1rem;
+}
+
 .ai-squad-button {
-  grid-column: 1 / 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: var(--fpl-green);
   color: var(--fpl-purple-dark);
   font-weight: bold;
@@ -105,12 +114,21 @@ h1 {
   text-align: center;
   border-radius: 4px;
   transition: filter 0.2s ease;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
 }
-.ai-squad-button:hover {
+
+.ai-squad-button:hover:not([disabled]) {
   filter: brightness(1.1);
   color: var(--fpl-purple-dark);
 }
 
+.ai-squad-button[disabled] {
+  background-color: var(--fpl-text-secondary);
+  cursor: not-allowed;
+  filter: none;
+}
 
 /* === Player List & Cards === */
 .player-list {

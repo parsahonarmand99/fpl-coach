@@ -1,6 +1,7 @@
 import React from 'react';
+import './PlayerOnPitch.css';
 
-const PlayerOnPitch = ({ player }) => {
+const PlayerOnPitch = ({ player, isHighlighted, highlightColor, grayscale }) => {
   if (!player) {
     return null;
   }
@@ -9,14 +10,25 @@ const PlayerOnPitch = ({ player }) => {
   // so we'll use the official Premier League badges as a fallback.
   const badgeUrl = `https://resources.premierleague.com/premierleague/badges/70/t${player.team_code}.png`;
 
+  const playerClasses = ['player-on-pitch'];
+  if (grayscale) {
+    playerClasses.push('grayscale');
+  }
+
+  const playerStyle = isHighlighted ? { 
+    boxShadow: `0 0 10px 3px ${highlightColor}`,
+  } : {};
+
   return (
-    <div className="player-on-pitch">
+    <div className={playerClasses.join(' ')} style={playerStyle}>
       <div className="player-badge">
         <img src={badgeUrl} alt={`${player.team_name} badge`} />
       </div>
-      <div className="player-info">
-        <span className="player-name">{player.web_name}</span>
-        <span className="player-points">{player.total_points} pts</span>
+      <div className="player-name-bar">
+        <span>{player.web_name}</span>
+      </div>
+      <div className="player-points-bar">
+        <span>{player.total_points} pts</span>
       </div>
     </div>
   );

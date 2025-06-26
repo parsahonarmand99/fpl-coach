@@ -34,6 +34,7 @@ function App() {
   const [filterTeam, setFilterTeam] = useState('ALL')
   const [filterPosition, setFilterPosition] = useState('ALL')
   const [searchTerm, setSearchTerm] = useState('')
+  const [isBuilding, setIsBuilding] = useState(false);
 
   useEffect(() => {
     fetch('/api/players')
@@ -84,6 +85,22 @@ function App() {
   const handleRemovePlayer = (player) => {
     setSquad(squad.filter(p => p.id !== player.id))
   }
+
+  const handleBuildRandomSquad = async () => {
+    setIsBuilding(true);
+    try {
+      const response = await fetch('/api/random-squad');
+      if (!response.ok) {
+        throw new Error("Failed to build a random squad. The server might be busy.");
+      }
+      const randomSquad = await response.json();
+      setSquad(randomSquad);
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setIsBuilding(false);
+    }
+  };
 
   const sortedAndFilteredPlayers = players
     .filter(player => (filterTeam === 'ALL' || player.team_name === filterTeam))
@@ -140,9 +157,14 @@ function App() {
               {positions.map(pos => <option key={pos} value={pos}>{pos}</option>)}
             </select>
           </div>
-          <Link to="/ai-squad" className="ai-squad-button">
-              Build AI Squad
-          </Link>
+          <div className="ai-buttons">
+            <Link to="/ai-squad" className="ai-squad-button">
+                Build AI Squad
+            </Link>
+            <button onClick={handleBuildRandomSquad} className="ai-squad-button" disabled={isBuilding}>
+              {isBuilding ? 'Building...' : 'Build Randomized Squad'}
+            </button>
+          </div>
         </div>
 
         <div className="player-list">

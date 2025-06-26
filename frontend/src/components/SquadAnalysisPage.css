@@ -108,4 +108,18 @@
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+.side-by-side-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.pitch-wrapper h3 {
+    text-align: center;
+    color: var(--fpl-text-primary);
+    font-size: 1.5rem;
+    margin: 0 0 1rem 0;
 } 
