@@ -43,22 +43,24 @@ const Pitch = ({ squad, starting_11, bench: benchPlayers, highlightedPlayers = [
 
   return (
     <div className="pitch-container">
-      <div className="pitch">
-        {/* Render each position group in its own row */}
-        {renderPositionRow(positionGroups.GKP)}
-        {renderPositionRow(positionGroups.DEF)}
-        {renderPositionRow(positionGroups.MID)}
-        {renderPositionRow(positionGroups.FWD)}
-      </div>
-      {benchPlayers && benchPlayers.length > 0 && (
-          <div className="bench">
-            <h3>Bench</h3>
-            <div className="bench-players">
-                {/* Render the bench players */}
-                {benchPlayers.map(player => <PlayerOnPitch key={player.id} player={player} />)}
+      <div className="pitch-and-bench-container">
+        <div className="pitch">
+          {/* Render each position group in its own row */}
+          {renderPositionRow(positionGroups.GKP)}
+          {renderPositionRow(positionGroups.DEF)}
+          {renderPositionRow(positionGroups.MID)}
+          {renderPositionRow(positionGroups.FWD)}
+        </div>
+        {benchPlayers && benchPlayers.length > 0 && (
+            <div className="bench">
+              <h3>Bench</h3>
+              <div className="bench-players">
+                  {/* Render the bench players */}
+                  {benchPlayers.map(player => <PlayerOnPitch key={player.id} player={player} />)}
+              </div>
             </div>
-          </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

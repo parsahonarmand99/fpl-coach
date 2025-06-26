@@ -39,52 +39,50 @@ const AISquadPage = () => {
   }, []);
 
   return (
-    <div className="App single-column-layout">
-      <div className="main-content">
-        <Link to="/" className="back-button">
-          &larr; Back to Home
-        </Link>
-        <h1>AI Generated Squad</h1>
-        
-        <div className="squad-controls">
-            <button onClick={handleBuildAiSquad} disabled={isAiLoading}>
-              {isAiLoading ? 'Regenerating...' : 'Regenerate Squad'}
-            </button>
+    <div className="ai-squad-content">
+      <Link to="/" className="back-button">
+        &larr; Back to Home
+      </Link>
+      <h1>AI Generated Squad</h1>
+      
+      <div className="squad-controls">
+          <button onClick={handleBuildAiSquad} disabled={isAiLoading}>
+            {isAiLoading ? 'Regenerating...' : 'Regenerate Squad'}
+          </button>
+      </div>
+
+      {error && <div className="error-message">Error: {error}</div>}
+
+      {isAiLoading && squadData.starting_11.length === 0 && (
+        <div className="loading-message">
+          Please wait, the AI is analyzing trillions of combinations to build your optimal team...
         </div>
+      )}
 
-        {error && <div className="error-message">Error: {error}</div>}
-
-        {isAiLoading && squadData.starting_11.length === 0 && (
-          <div className="loading-message">
-            Please wait, the AI is analyzing trillions of combinations to build your optimal team...
-          </div>
-        )}
-
-        {squadData.starting_11.length > 0 && (
-          <>
-            <div className="squad-info">
-              <div className="formation-info">
-                <h3>Formation: {squadData.formation}</h3>
+      {squadData.starting_11.length > 0 && (
+        <>
+          <div className="squad-info">
+            <div className="formation-info">
+              <h3>Formation: {squadData.formation}</h3>
+            </div>
+            <div className="squad-stats">
+              <div className="stat-item">
+                <span className="stat-label">Squad Value:</span>
+                <span className="stat-value">£{squadData.squad_value}m</span>
               </div>
-              <div className="squad-stats">
-                <div className="stat-item">
-                  <span className="stat-label">Squad Value:</span>
-                  <span className="stat-value">£{squadData.squad_value}m</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-label">Remaining Budget:</span>
-                  <span className="stat-value">£{squadData.remaining_budget}m</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-label">AI Score:</span>
-                  <span className="stat-value">{squadData.total_ai_score}</span>
-                </div>
+              <div className="stat-item">
+                <span className="stat-label">Remaining Budget:</span>
+                <span className="stat-value">£{squadData.remaining_budget}m</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">AI Score:</span>
+                <span className="stat-value">{squadData.total_ai_score}</span>
               </div>
             </div>
-            <Pitch starting_11={squadData.starting_11} bench={squadData.bench} />
-          </>
-        )}
-      </div>
+          </div>
+          <Pitch starting_11={squadData.starting_11} bench={squadData.bench} />
+        </>
+      )}
     </div>
   );
 };

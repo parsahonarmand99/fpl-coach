@@ -30,10 +30,11 @@ h1 {
 .App {
   display: grid;
   grid-template-columns: 1fr;
-  max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
   gap: 2rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 @media (min-width: 1024px) {
@@ -46,6 +47,15 @@ h1 {
   background-color: var(--fpl-purple);
   padding: 2.5rem;
   border-radius: 8px;
+  max-width: 1400px;
+}
+
+.ai-squad-content {
+  background-color: var(--fpl-purple);
+  padding: 2.5rem;
+  border-radius: 8px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .main-content > h1 {

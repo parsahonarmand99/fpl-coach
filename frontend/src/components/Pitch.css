@@ -15,6 +15,7 @@
     flex-direction: column;
     justify-content: space-between;
     min-height: 500px;
+    flex-grow: 1;
 }
 
 .pitch-row {
@@ -75,10 +76,17 @@
     margin-top: 2px;
 }
 
+.pitch-and-bench-container {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+}
+
 .bench {
     background-color: var(--fpl-purple-dark);
     padding: 1rem;
     border-radius: 8px;
+    width: 120px; /* Give bench a fixed width */
 }
 
 .bench h3 {
@@ -91,5 +99,5 @@
     display: flex;
     justify-content: center;
     gap: 0.5rem;
-    flex-wrap: wrap;
+    flex-direction: column; /* Stack bench players vertically */
 } 
