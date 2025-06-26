@@ -15,7 +15,8 @@
     flex-direction: column;
     justify-content: space-between;
     min-height: 500px;
-    flex-grow: 1;
+    width: 700px; /* Set a fixed, generous width for the pitch */
+    flex-shrink: 0; /* Prevent the pitch from shrinking if space is tight */
 }
 
 .pitch-row {
@@ -80,6 +81,7 @@
     display: flex;
     gap: 2rem;
     align-items: flex-start;
+    justify-content: center; /* Center the pitch and bench horizontally */
 }
 
 .bench {
