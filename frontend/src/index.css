@@ -23,6 +23,8 @@ body {
   background-color: var(--fpl-bg);
   color: var(--fpl-text-primary);
   min-height: 100vh;
+  display: flex;
+  justify-content: center;
 }
 
 h1, h2, h3 {
