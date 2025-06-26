@@ -266,10 +266,12 @@ def analyze_squad_endpoint(squad_data: Squad):
         
         captain = analyzer.suggest_captain()
         transfers = analyzer.suggest_transfers()
+        double_transfer = analyzer.suggest_double_transfers()
         
         return {
             "captain_suggestion": captain,
-            "suggested_transfers": transfers
+            "suggested_transfers": transfers,
+            "double_transfer_suggestion": double_transfer
         }
     except Exception as e:
         # Log the exception for debugging

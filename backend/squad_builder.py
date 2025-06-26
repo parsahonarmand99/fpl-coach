@@ -1,4 +1,5 @@
 import random
+import itertools
 from collections import Counter
 from typing import List, Dict, Any
 from pydantic import BaseModel
@@ -285,6 +286,12 @@ class SquadAnalyzer:
             pos_name = p.get('position_name')
             if pos_name in self.player_map_by_pos:
                 self.player_map_by_pos[pos_name].append(p)
+        
+        # Also create a sorted version for searching
+        self.sorted_player_map_by_pos = {
+            pos: sorted(players, key=lambda p: p.get('ai_score', 0), reverse=True)
+            for pos, players in self.player_map_by_pos.items()
+        }
 
     def suggest_captain(self):
         """Suggests the player with the highest AI score as captain."""
@@ -343,6 +350,75 @@ class SquadAnalyzer:
                 break
         
         return final_suggestions
+
+    def suggest_double_transfers(self):
+        """
+        Suggests the single best 2-for-2 transfer to maximize AI score gain.
+        This is computationally expensive, so it's heavily optimized.
+        """
+        best_double_transfer = None
+        highest_gain = 0.0
+
+        # Iterate through all unique pairs of players to sell from the user's squad
+        for player_out_A, player_out_B in itertools.combinations(self.user_squad, 2):
+            # Define the properties of the players being sold
+            pos_A, pos_B = player_out_A['position_name'], player_out_B['position_name']
+            score_out = player_out_A['ai_score'] + player_out_B['ai_score']
+            
+            # Determine the maximum budget available for the two new players
+            cost_out = player_out_A['now_cost'] + player_out_B['now_cost']
+            available_budget = self.squad_budget * 10 + cost_out 
+
+            # Heuristic: Limit the search to the top N players for each position
+            candidates_A = self.sorted_player_map_by_pos[pos_A][:50]
+            candidates_B = self.sorted_player_map_by_pos[pos_B][:50]
+
+            for player_in_A in candidates_A:
+                # Early exit if this player alone is too expensive
+                if player_in_A['now_cost'] >= available_budget:
+                    continue
+                
+                # Player must not already be in the squad (accounting for the two being sold)
+                squad_ids_minus_out = self.user_squad_ids - {player_out_A['id'], player_out_B['id']}
+                if player_in_A['id'] in squad_ids_minus_out:
+                    continue
+
+                for player_in_B in candidates_B:
+                    # Skip if the pair is the same player
+                    if player_in_A['id'] == player_in_B['id']:
+                        continue
+                    if player_in_B['id'] in squad_ids_minus_out:
+                        continue
+                    
+                    # --- FPL Rule Checks ---
+                    # 1. Budget Check
+                    if player_in_A['now_cost'] + player_in_B['now_cost'] > available_budget:
+                        continue
+                    
+                    # 2. Team Limit Check
+                    temp_team_counts = self.team_counts.copy()
+                    temp_team_counts[player_out_A['team']] -= 1
+                    temp_team_counts[player_out_B['team']] -= 1
+                    
+                    temp_team_counts[player_in_A['team']] = temp_team_counts.get(player_in_A['team'], 0) + 1
+                    temp_team_counts[player_in_B['team']] = temp_team_counts.get(player_in_B['team'], 0) + 1
+                    
+                    if any(count > SQUAD_RULES['PLAYERS_PER_TEAM'] for count in temp_team_counts.values()):
+                        continue
+
+                    # --- Score Calculation ---
+                    score_in = player_in_A['ai_score'] + player_in_B['ai_score']
+                    score_gain = score_in - score_out
+
+                    if score_gain > highest_gain:
+                        highest_gain = score_gain
+                        best_double_transfer = {
+                            "players_out": [player_out_A, player_out_B],
+                            "players_in": [player_in_A, player_in_B],
+                            "score_gain": score_gain
+                        }
+
+        return best_double_transfer
 
 class FPLData(BaseModel):
     """Pydantic model for validating the basic FPL data structure."""

@@ -51,14 +51,29 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1.5rem;
 }
 
-.transfer-player-out,
-.transfer-player-in,
-.score-gain {
-    text-align: center;
-    flex: 1;
+.double-transfer-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.transfer-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex-basis: 35%;
+}
+
+.transfer-player {
+    background-color: rgba(0,0,0,0.1);
+    padding: 0.5rem;
+    border-radius: 4px;
+}
+
+.transfer-player-out, .transfer-player-in {
+    flex-basis: 35%;
 }
 
 .transfer-arrow {
@@ -122,4 +137,15 @@
     color: var(--fpl-text-primary);
     font-size: 1.5rem;
     margin: 0 0 1rem 0;
+}
+
+.double-transfer-card .transfer-arrow {
+    font-size: 2.5rem;
+    color: var(--fpl-green);
+}
+
+.transfer-player-out .label,
+.transfer-player-in .label,
+.transfer-column .label {
+    text-transform: uppercase;
 } 

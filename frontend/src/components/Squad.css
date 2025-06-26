@@ -4,6 +4,9 @@
   border-radius: 8px;
   padding: 1.5rem;
   height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
 }
 
 .squad-container h2 {
@@ -42,6 +45,10 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  overflow-y: auto;
+  flex-grow: 1;
+  /* Add some padding to avoid scrollbar overlapping content */
+  padding-right: 0.5rem; 
 }
 
 .squad-position h3 {

@@ -113,6 +113,37 @@ const SquadAnalysisPage = () => {
                 </div>
             </div>
 
+            {analysis.double_transfer_suggestion && (
+                <div className="analysis-section">
+                    <h2>Strategic Double Transfer</h2>
+                    <div className="suggestion-card double-transfer-card">
+                        <div className="transfer-column">
+                            <p className="label">OUT</p>
+                            {analysis.double_transfer_suggestion.players_out.map(p => (
+                                <div key={p.id} className="transfer-player">
+                                    <p className="player-name">{p.web_name}</p>
+                                    <p className="team-name">{p.team_name}</p>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="transfer-arrow">&rArr;</div>
+                        <div className="transfer-column">
+                            <p className="label">IN</p>
+                             {analysis.double_transfer_suggestion.players_in.map(p => (
+                                <div key={p.id} className="transfer-player">
+                                    <p className="player-name">{p.web_name}</p>
+                                    <p className="team-name">{p.team_name}</p>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="score-gain">
+                            <p className="label">Total AI Score Gain</p>
+                            <p className="score-value">+{analysis.double_transfer_suggestion.score_gain.toFixed(1)}</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="analysis-section">
                 <h2>Top Transfer Suggestions</h2>
                 {analysis.suggested_transfers.map((transfer, index) => (
