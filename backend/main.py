@@ -197,9 +197,26 @@ def get_ai_squad():
             remaining = [p for p in position_groups[pos] if p['id'] not in selected_ids]
             bench.extend(remaining)
         
+        # Calculate squad statistics
+        total_cost = sum(p.get('now_cost', 0) / 10 for p in best_squad)  # Convert from tenths to millions
+        remaining_budget = 100.0 - total_cost
+        total_ai_score = sum(p.get('ai_score', 0) for p in starting_11)
+        
+        # Determine the formation name
+        formation_counts = {}
+        for player in best_formation_players:
+            pos = player.get('position_name')
+            formation_counts[pos] = formation_counts.get(pos, 0) + 1
+        
+        formation_name = f"{formation_counts.get('DEF', 0)}-{formation_counts.get('MID', 0)}-{formation_counts.get('FWD', 0)}"
+        
         return {
             "starting_11": starting_11,
-            "bench": bench
+            "bench": bench,
+            "formation": formation_name,
+            "squad_value": round(total_cost, 1),
+            "remaining_budget": round(remaining_budget, 1),
+            "total_ai_score": round(total_ai_score, 1)
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

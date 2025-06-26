@@ -4,7 +4,14 @@ import '../App.css';
 import Pitch from './Pitch';
 
 const AISquadPage = () => {
-  const [squadData, setSquadData] = useState({ starting_11: [], bench: [] });
+  const [squadData, setSquadData] = useState({ 
+    starting_11: [], 
+    bench: [], 
+    formation: '', 
+    squad_value: 0, 
+    remaining_budget: 0, 
+    total_ai_score: 0 
+  });
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -53,7 +60,30 @@ const AISquadPage = () => {
           </div>
         )}
 
-        {squadData.starting_11.length > 0 && <Pitch starting_11={squadData.starting_11} bench={squadData.bench} />}
+        {squadData.starting_11.length > 0 && (
+          <>
+            <div className="squad-info">
+              <div className="formation-info">
+                <h3>Formation: {squadData.formation}</h3>
+              </div>
+              <div className="squad-stats">
+                <div className="stat-item">
+                  <span className="stat-label">Squad Value:</span>
+                  <span className="stat-value">£{squadData.squad_value}m</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Remaining Budget:</span>
+                  <span className="stat-value">£{squadData.remaining_budget}m</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">AI Score:</span>
+                  <span className="stat-value">{squadData.total_ai_score}</span>
+                </div>
+              </div>
+            </div>
+            <Pitch starting_11={squadData.starting_11} bench={squadData.bench} />
+          </>
+        )}
       </div>
     </div>
   );
