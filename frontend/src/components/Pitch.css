@@ -1,0 +1,98 @@
+.pitch-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 2rem;
+    width: 100%;
+    max-width: 1000px;
+    margin: 2rem auto;
+}
+  
+.pitch {
+    background-image: url('../assets/Football_field.svg');
+    background-size: cover;
+    background-position: center;
+    border: 2px solid #555;
+    border-radius: 8px;
+    padding: 2rem 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    min-height: 600px;
+    flex: 1;
+}
+
+.pitch-row {
+    display: flex;
+    justify-content: space-around;
+    margin: 1rem 0;
+}
+
+.player-on-pitch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100px;
+}
+
+.player-badge {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.player-badge img {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.player-info {
+    text-align: center;
+    margin-top: 5px;
+}
+
+.player-name {
+    display: block;
+    background-color: #37003c;
+    color: white;
+    font-weight: bold;
+    padding: 3px 10px;
+    border-radius: 3px;
+    font-size: 0.9em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90px;
+}
+
+.player-points {
+    display: block;
+    background-color: #f0f0f0;
+    color: #333;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 0.8em;
+    margin-top: 2px;
+}
+
+.bench {
+    padding: 1rem;
+    background-color: #2a2a2a;
+    border-radius: 8px;
+    text-align: center;
+    width: 150px;
+}
+
+.bench h3 {
+    margin: 0 0 1rem 0;
+    color: #ccc;
+}
+
+.bench-players {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+} 

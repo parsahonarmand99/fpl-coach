@@ -140,6 +140,11 @@ function App() {
               {positions.map(pos => <option key={pos} value={pos}>{pos}</option>)}
             </select>
           </div>
+          <div className="control-group">
+            <Link to="/ai-squad" className="ai-squad-button">
+                Build AI Squad
+            </Link>
+          </div>
         </div>
 
         <div className="player-list">
@@ -154,15 +159,14 @@ function App() {
                   <p>£{(player.now_cost / 10).toFixed(1)}m</p>
                   <p>Form: {player.form}</p>
                 </div>
-                {console.log(player)}
                 <div className="upcoming-fixtures">
                   {player.upcoming_fixtures && player.upcoming_fixtures.map((fixture, index) => (
                     <Fixture key={index} fixture={fixture} />
                   ))}
                 </div>
                 <button onClick={(e) => {
-                  e.preventDefault(); // Prevent navigation when clicking the button
-                  handleAddPlayer(player)
+                  e.preventDefault();
+                  handleAddPlayer(player);
                 }}>Add to Squad</button>
               </div>
             </Link>

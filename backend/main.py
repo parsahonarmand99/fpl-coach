@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException
 import requests
 from dotenv import load_dotenv
 from unidecode import unidecode
+from squad_builder import GeneticSquadBuilder
 
 load_dotenv()
 
@@ -110,6 +111,98 @@ def get_players_data():
         player['upcoming_fixtures'] = team_fixtures.get(player['team'], [])
 
     return players
+
+@app.get("/api/ai-squad")
+def get_ai_squad():
+    try:
+        players = get_players_data()
+        
+        # Filter out players with status 'u' (unavailable) or low chance of playing
+        available_players = [
+            p for p in players 
+            if p.get('status') != 'u' and (p.get('chance_of_playing_next_round') is None or p.get('chance_of_playing_next_round') > 50)
+        ]
+
+        builder = GeneticSquadBuilder(
+            players=available_players,
+            population_size=200, # Increased for better exploration
+            generations=100,     # Increased for deeper evolution
+            mutation_rate=0.2
+        )
+        best_squad = builder.run()
+        
+        # Properly select starting 11 following FPL rules
+        # Group players by position
+        position_groups = {'GKP': [], 'DEF': [], 'MID': [], 'FWD': []}
+        for player in best_squad:
+            pos = player.get('position_name')
+            if pos in position_groups:
+                position_groups[pos].append(player)
+        
+        # Sort each position group by AI score
+        for pos in position_groups:
+            position_groups[pos].sort(key=lambda p: p.get('ai_score', 0), reverse=True)
+        
+        # Select starting 11: 1 GKP + best formation from remaining positions
+        starting_11 = []
+        bench = []
+        
+        # Always start the best goalkeeper
+        if position_groups['GKP']:
+            starting_11.append(position_groups['GKP'][0])
+            bench.extend(position_groups['GKP'][1:])
+        
+        # For outfield players, try different valid formations and pick the best
+        valid_formations = [
+            {'DEF': 4, 'MID': 4, 'FWD': 2},  # 4-4-2
+            {'DEF': 3, 'MID': 5, 'FWD': 2},  # 3-5-2
+            {'DEF': 3, 'MID': 4, 'FWD': 3},  # 3-4-3
+            {'DEF': 4, 'MID': 3, 'FWD': 3},  # 4-3-3
+            {'DEF': 4, 'MID': 5, 'FWD': 1},  # 4-5-1
+            {'DEF': 5, 'MID': 4, 'FWD': 1},  # 5-4-1
+            {'DEF': 5, 'MID': 3, 'FWD': 2},  # 5-3-2
+        ]
+        
+        best_formation_score = 0
+        best_formation_players = []
+        
+        for formation in valid_formations:
+            formation_players = []
+            formation_score = 0
+            
+            # Check if we have enough players for this formation
+            can_form = True
+            for pos, count in formation.items():
+                if len(position_groups[pos]) < count:
+                    can_form = False
+                    break
+            
+            if can_form:
+                # Select best players for this formation
+                for pos, count in formation.items():
+                    selected = position_groups[pos][:count]
+                    formation_players.extend(selected)
+                    formation_score += sum(p.get('ai_score', 0) for p in selected)
+                
+                if formation_score > best_formation_score:
+                    best_formation_score = formation_score
+                    best_formation_players = formation_players
+        
+        # Add the best formation players to starting 11
+        starting_11.extend(best_formation_players)
+        
+        # Add remaining players to bench
+        for pos in ['DEF', 'MID', 'FWD']:
+            selected_ids = {p['id'] for p in best_formation_players if p.get('position_name') == pos}
+            remaining = [p for p in position_groups[pos] if p['id'] not in selected_ids]
+            bench.extend(remaining)
+        
+        return {
+            "starting_11": starting_11,
+            "bench": bench
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/player/{player_id}")
 def get_player_details(player_id: int):
