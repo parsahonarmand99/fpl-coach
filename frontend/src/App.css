@@ -305,3 +305,9 @@ h1 {
         font-size: 1.5rem;
     }
 }
+
+.player-name-and-team {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}

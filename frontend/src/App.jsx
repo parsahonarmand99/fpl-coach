@@ -118,7 +118,7 @@ function App() {
   return (
     <div className="App">
       <div className="main-content">
-        <h1>FPL AI Coach</h1>
+        <h1>FPL Coach ✨</h1>
 
         <div className="controls">
           <div className="control-group">
@@ -171,11 +171,20 @@ function App() {
           {sortedAndFilteredPlayers.map(player => (
             <Link to={`/player/${player.id}`} key={player.id} className="player-card-link">
               <div className="player-card">
-                <h2>{player.web_name}</h2>
-                <p className="player-team">{player.team_name}</p>
+                <div className="player-name-and-team">
+                  <h2>{player.web_name}</h2>
+                  {player.team_code && (
+                    <img 
+                      src={`https://resources.premierleague.com/premierleague/badges/70/t${player.team_code}.png`} 
+                      alt={`${player.team_name} badge`} 
+                      className="team-badge"
+                      style={{ width: '40px', height: '40px' }}
+                    />
+                  )}
+                </div>
                 <p className="player-position">{player.position_name}</p>
                 <div className="player-stats">
-                  <p data-label="Pts">{player.total_points}</p>
+                  <p data-label="Points">{player.total_points}</p>
                   <p data-label="Price">£{(player.now_cost / 10).toFixed(1)}m</p>
                   <p data-label="Form">{player.form}</p>
                 </div>

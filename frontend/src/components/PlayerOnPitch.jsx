@@ -12,7 +12,7 @@ const PlayerOnPitch = ({ player, isHighlighted, highlightColor, grayscale }) => 
     console.log(player)
   }
   const badgeUrl = `https://resources.premierleague.com/premierleague/badges/70/t${player.team_code}.png`;
-  console.log(badgeUrl)
+
   const playerClasses = ['player-on-pitch'];
   if (grayscale) {
     playerClasses.push('grayscale');
