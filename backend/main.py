@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException
 import requests
 from dotenv import load_dotenv
 from unidecode import unidecode
-from squad_builder import GeneticSquadBuilder, SquadAnalyzer
+from squad_builder import GeneticSquadBuilder, SquadAnalyzer, RandomSquadBuilder
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from openai import AsyncAzureOpenAI
@@ -334,11 +334,21 @@ async def get_random_squad():
     """
     try:
         all_players = get_players_data()
-        builder = GeneticSquadBuilder(players=all_players)
-        squad = builder.create_random_squad()
+        builder = RandomSquadBuilder(players=all_players)
+        squad = builder.build()
         if squad is None:
             raise HTTPException(status_code=500, detail="Failed to generate a random squad after several attempts.")
-        return squad
+        
+        # To maintain a consistent output format, we can calculate some basic stats
+        total_cost = sum(p.get('now_cost', 0) / 10 for p in squad)
+        remaining_budget = 100.0 - total_cost
+        
+        return {
+            "squad": squad,
+            "squad_value": round(total_cost, 1),
+            "remaining_budget": round(remaining_budget, 1)
+        }
+
     except Exception as e:
         print(f"An unexpected error occurred in /api/random-squad: {e}")
         raise HTTPException(status_code=500, detail="An internal server error occurred while generating a random squad.")
@@ -354,7 +364,7 @@ async def analyze_squad_endpoint(squad_data: Squad):
         
         analyzer = SquadAnalyzer(user_squad=user_squad_data, all_players=all_players)
         
-        captain = analyzer.suggest_captain()
+        captain, vice_captain = analyzer.suggest_captain()
         transfers = await analyzer.suggest_transfers(reasoning_generator=generate_transfer_reasoning)
         double_transfer = await analyzer.suggest_double_transfers(reasoning_generator=generate_transfer_reasoning)
         
@@ -381,6 +391,7 @@ async def analyze_squad_endpoint(squad_data: Squad):
         
         return {
             "captain_suggestion": captain,
+            "vice_captain_suggestion": vice_captain,
             "suggested_transfers": transfer_suggestions,
             "double_transfer_suggestion": double_transfer_suggestion
         }

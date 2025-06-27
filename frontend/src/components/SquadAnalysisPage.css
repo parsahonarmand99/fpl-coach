@@ -33,22 +33,43 @@
     background-color: var(--fpl-purple-dark);
     border: 1px solid var(--fpl-border);
     border-radius: 8px;
-    padding: 1.5rem;
-    margin-bottom: 1rem;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.captaincy-container {
+    display: flex;
+    gap: 16px;
 }
 
 .captain-card {
+    flex: 1;
     text-align: center;
 }
+
+.captain-label {
+    font-weight: bold;
+    font-size: 0.8rem;
+    color: #555;
+    margin-bottom: 4px;
+}
+
 .captain-name {
-    font-size: 2rem;
+    font-size: 1.4rem;
     font-weight: bold;
     margin: 0;
+    color: var(--fpl-text-primary);
 }
+
+.vice-captain-card {
+    background-color: var(--fpl-purple-dark);
+}
+
 .captain-team {
-    font-size: 1.2rem;
+    font-size: 1rem;
     color: var(--fpl-text-secondary);
-    margin: 0.25rem 0 0 0;
+    margin: 4px 0 0 0;
 }
 
 .transfer-card {
@@ -97,6 +118,7 @@
     font-size: 2rem;
     color: #2dd4bf;
     font-weight: bold;
+    margin-bottom: 1rem;
 }
 
 .transfer-header, .score-gain-header {
@@ -121,7 +143,8 @@
 }
 
 .score-gain-container {
-    text-align: right;
+    text-align: center;
+    padding: 1rem 0;
 }
 
 .score-gain-value {

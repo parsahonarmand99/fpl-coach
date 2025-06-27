@@ -27,6 +27,111 @@ VALID_FORMATIONS = [
     {'GKP': 1, 'DEF': 5, 'MID': 4, 'FWD': 1},
 ]
 
+class RandomSquadBuilder:
+    def __init__(self, players, budget=100.0):
+        self.players = players
+        self.budget = budget
+        self.positions = {pos: [] for pos in SQUAD_RULES["POSITIONS"].keys()}
+        for p in self.players:
+            pos_name = p.get('position_name')
+            if pos_name in self.positions:
+                self.positions[pos_name].append(p)
+
+    def _is_valid(self, squad):
+        """Checks if a squad is valid according to FPL rules."""
+        if len(squad) != SQUAD_RULES["TOTAL_PLAYERS"]:
+            return False
+
+        if sum(p['now_cost'] / 10 for p in squad) > self.budget:
+            return False
+
+        team_counts = Counter(p['team'] for p in squad)
+        if any(count > SQUAD_RULES["PLAYERS_PER_TEAM"] for count in team_counts.values()):
+            return False
+
+        position_counts = Counter(p['position_name'] for p in squad)
+        for pos, count in SQUAD_RULES["POSITIONS"].items():
+            if position_counts.get(pos, 0) != count:
+                return False
+
+        return True
+
+    def build(self, attempts=2000):
+        """
+        Tries to build a random squad that is as close to the budget as possible.
+        """
+        best_squad = None
+        best_cost = 0.0
+
+        for _ in range(attempts):
+            squad = []
+            # This is a more robust way to build a squad respecting team limits from the start
+            temp_positions = {pos: list(players) for pos, players in self.positions.items()}
+            
+            # Shuffle players within each position to ensure randomness
+            for pos in temp_positions:
+                random.shuffle(temp_positions[pos])
+
+            # A bit of a greedy approach: try to pick more expensive players first
+            for pos in temp_positions:
+                temp_positions[pos].sort(key=lambda p: p['now_cost'], reverse=True)
+
+            squad = self._generate_squad_from_positions(temp_positions)
+            
+            if squad and self._is_valid(squad):
+                current_cost = sum(p['now_cost'] / 10 for p in squad)
+                if current_cost > best_cost:
+                    best_squad = squad
+                    best_cost = current_cost
+                    # If we hit the budget exactly or are very close, we can stop early.
+                    if best_cost >= self.budget - 0.5:
+                        break
+        
+        # If the greedy approach fails, fall back to a purely random one
+        if not best_squad:
+            for _ in range(attempts):
+                squad = self._create_purely_random_squad()
+                if self._is_valid(squad):
+                    current_cost = sum(p['now_cost'] / 10 for p in squad)
+                    if current_cost > best_cost:
+                        best_squad = squad
+                        best_cost = current_cost
+                        if best_cost == self.budget:
+                            break
+        
+        return best_squad
+
+    def _generate_squad_from_positions(self, position_pool):
+        squad = []
+        team_counts = Counter()
+        
+        # Fill squad position by position
+        for pos, count in SQUAD_RULES["POSITIONS"].items():
+            added_in_pos = 0
+            for player in position_pool[pos]:
+                if added_in_pos == count:
+                    break
+                # Check if player is already in squad (shouldn't happen with good pools)
+                # and if the team limit is not exceeded
+                if player['id'] not in {p['id'] for p in squad} and \
+                   team_counts[player['team']] < SQUAD_RULES["PLAYERS_PER_TEAM"]:
+                    
+                    squad.append(player)
+                    team_counts[player['team']] += 1
+                    added_in_pos += 1
+            
+            if added_in_pos < count:
+                return None # Failed to form a valid squad
+        
+        return squad
+
+    def _create_purely_random_squad(self):
+        squad = []
+        for pos, count in SQUAD_RULES["POSITIONS"].items():
+            if len(self.positions[pos]) >= count:
+                squad.extend(random.sample(self.positions[pos], count))
+        return squad
+
 class GeneticSquadBuilder:
     def __init__(self, players, budget=100.0, population_size=1000, generations=500, mutation_rate=0.2, elitism_pct=0.1):
         """
@@ -144,7 +249,7 @@ class GeneticSquadBuilder:
         if not next_n_fixtures:
             return 3 
 
-        total_difficulty = sum(f['difficulty'] for f in next_n_fixtures)
+        total_difficulty = sum(f.get('difficulty', 3) for f in next_n_fixtures)
         return total_difficulty / len(next_n_fixtures)
 
     def _calculate_ai_score(self, player: Dict[str, Any]) -> float:
@@ -273,56 +378,91 @@ class GeneticSquadBuilder:
         return squad # Return original if no replacement is found
 
     def run(self):
-        """Runs the genetic algorithm to find the best possible squad."""
-        # 1. Create the initial population
+        """
+        The main entry point to run the genetic algorithm.
+        Initializes a population and evolves it over a number of generations
+        to find the best possible FPL squad.
+        """
+        # --- 1. Initialization ---
         population = []
-        while len(population) < self.population_size:
+        for _ in range(self.population_size):
+            # Use the existing random squad creator and repair if needed
             squad = self._create_random_squad()
             if squad:
                 population.append(squad)
+        
+        print(f"Initial population created with {len(population)} squads.")
 
-        if not population:
-            raise Exception("Could not generate a valid initial population.")
+        # --- 2. Evolution Loop ---
+        for gen in range(self.generations):
+            # Calculate fitness for the entire population
+            fitness_scores = [self._calculate_fitness(squad) for squad in population]
 
-        for _ in range(self.generations):
-            # 2. Score the population
-            fitness_scores = [(self._calculate_fitness(squad), squad) for squad in population]
-            fitness_scores.sort(key=lambda x: x[0], reverse=True)
+            # --- 3. Selection ---
+            # Combine population and scores for sorting
+            pop_with_fitness = list(zip(population, fitness_scores))
             
-            next_generation = []
+            # Sort by fitness in descending order
+            pop_with_fitness.sort(key=lambda x: x[1], reverse=True)
             
-            # 3. Elitism: Carry over the best squads
-            elites = [squad for _, squad in fitness_scores[:self.elite_size]]
-            next_generation.extend(elites)
+            # Elitism: Carry over the best squads to the next generation
+            elites = [squad for squad, score in pop_with_fitness[:self.elite_size]]
+            next_generation = elites
+
+            # --- 4. Crossover & Mutation ---
+            # Create the rest of the new generation through crossover
+            num_offspring = self.population_size - self.elite_size
             
-            # 4. Create the rest of the new generation through crossover and mutation
-            mating_pool = [squad for _, squad in fitness_scores[:self.population_size // 2]]
+            # Select parents based on fitness (tournament selection could also work here)
+            # For simplicity, we're using fitness-proportionate selection (roulette wheel)
+            total_fitness = sum(fitness_scores)
+            if total_fitness == 0: # Avoid division by zero if all fitnesses are 0
+                selection_probs = None
+            else:
+                selection_probs = [score / total_fitness for score in fitness_scores]
             
-            while len(next_generation) < self.population_size:
-                parent1, parent2 = random.choices(mating_pool, k=2)
+            # Unzip population for random choices
+            current_population = [squad for squad, score in pop_with_fitness]
+
+            for _ in range(num_offspring):
+                # Select two parents
+                if selection_probs:
+                    parent1, parent2 = random.choices(
+                        current_population,
+                        weights=selection_probs,
+                        k=2
+                    )
+                else: # Fallback to random selection
+                    parent1, parent2 = random.choices(current_population, k=2)
+
+                # Crossover
                 child = self._crossover(parent1, parent2)
-                
                 if not child: continue
 
-                # Mutate the child
+                # Mutation
                 if random.random() < self.mutation_rate:
                     child = self._mutate(child)
                 
-                # If the child is invalid, try to repair it. If it can't be repaired, discard.
+                # Repair if mutation or crossover made it invalid
                 if not self._is_valid(child):
                     child = self._repair_squad(child)
-                    if not child:
-                        continue
 
-                next_generation.append(child)
+                if child:
+                    next_generation.append(child)
             
             population = next_generation
+            
+            # Optional: Print progress
+            if (gen + 1) % 50 == 0:
+                best_squad_so_far = pop_with_fitness[0][0]
+                best_fitness = pop_with_fitness[0][1]
+                squad_cost = sum(p['now_cost'] / 10 for p in best_squad_so_far)
+                print(f"Generation {gen+1}/{self.generations} - Best Fitness: {best_fitness:.2f}, Squad Cost: £{squad_cost:.1f}m")
 
-        # Return the best squad from the final generation
-        final_fitness_scores = [(self._calculate_fitness(squad), squad) for squad in population if squad]
-        final_fitness_scores.sort(key=lambda x: x[0], reverse=True)
-        
-        return final_fitness_scores[0][1]
+        # --- 5. Return Best Result ---
+        final_fitness_scores = [self._calculate_fitness(squad) for squad in population]
+        best_squad_index = max(range(len(final_fitness_scores)), key=final_fitness_scores.__getitem__)
+        return population[best_squad_index]
 
 class SquadAnalyzer:
     """
@@ -362,7 +502,7 @@ class SquadAnalyzer:
         if not next_n_fixtures:
             return 3 
 
-        total_difficulty = sum(f['difficulty'] for f in next_n_fixtures)
+        total_difficulty = sum(f.get('difficulty', 3) for f in next_n_fixtures)
         return total_difficulty / len(next_n_fixtures)
 
     def _calculate_ai_score(self, player: Dict[str, Any]) -> float:
@@ -404,6 +544,38 @@ class SquadAnalyzer:
 
         return round(final_score, 2)
         
+    def _print_player_score_analysis(self, player: Dict[str, Any]):
+        """
+        Prints a detailed, formatted breakdown of a player's AI score calculation
+        for debugging and transparency.
+        """
+        print(f"--- Analysis for {player.get('web_name', 'N/A')} ---")
+        
+        # Re-run calculation logic to print each step
+        form_weight = 0.4
+        ict_weight = 0.4
+        difficulty_weight = 0.2
+
+        form = float(player.get('form', 0))
+        ict_index = float(player.get('ict_index', 0))
+        
+        normalized_form = (form / 10) * 10
+        normalized_ict = (ict_index / 400) * 10 
+        
+        avg_difficulty = self._get_average_fixture_difficulty(player)
+        difficulty_score = (5 - avg_difficulty) / 4
+        
+        base_score = (normalized_form * form_weight) + (normalized_ict * ict_weight)
+        score_after_fixtures = base_score * (1 + (difficulty_score * difficulty_weight))
+        
+        minutes_bonus = (player.get('minutes', 0) / 3420) * 2
+        final_score = score_after_fixtures + minutes_bonus
+
+        print(f"  Base Stats       | Form: {form:.1f}, ICT Index: {ict_index:.1f}")
+        print(f"  Fixture Analysis | Avg Difficulty: {avg_difficulty:.2f} -> Modifier: {1 + (difficulty_score * difficulty_weight):.3f}")
+        print(f"  Calculated Score | Base: {base_score:.2f} | With Fixtures: {score_after_fixtures:.2f} | Bonus: +{minutes_bonus:.2f}")
+        print(f"  >> Final AI Score: {final_score:.2f}")
+
     def _get_upcoming_fixtures(self, player, num_games=5):
         """
         Retrieves the next N upcoming fixtures for a player.
@@ -487,6 +659,14 @@ class SquadAnalyzer:
                         "player_in": player_in,
                         "score_gain": score_gain
                     })
+                    
+                    # --- DETAILED PRINT FOR COMPARISON ---
+                    print("\n" + "="*80)
+                    print(f"Found Potential Transfer: {player_out.get('web_name')} -> {player_in.get('web_name')} | Score Gain: +{score_gain:.2f}")
+                    self._print_player_score_analysis(player_out)
+                    self._print_player_score_analysis(player_in)
+                    print("="*80)
+                    # ---
 
         # --- 2. Sort all possible transfers by score gain and get the top N ---
         sorted_transfers = sorted(all_potential_transfers, key=lambda x: x['score_gain'], reverse=True)
@@ -524,64 +704,86 @@ class SquadAnalyzer:
 
     async def suggest_double_transfers(self, reasoning_generator=None):
         """
-        Suggests the single best 2-for-2 transfer to maximize squad score.
-        This is computationally expensive, so it's heavily optimized.
+        Suggests the best 2-for-2 transfer by identifying poor-value players and finding
+        the optimal replacement pair that maximizes the entire squad's score.
         """
-        # --- 1. Identify the two weakest players in each position as candidates for transfer ---
-        weakest_players = sorted(self.user_squad, key=lambda p: self._calculate_ai_score(p))[:8]
+        print("\n--- Searching for Optimal Double Transfer ---")
+        
+        # --- 1. Identify players with poor value (low score for their cost) ---
+        squad_with_value = []
+        for p in self.user_squad:
+            cost = p.get('now_cost', 1)
+            score = p.get('ai_score', 0)
+            value = score / (cost / 10) if cost > 0 else 0
+            squad_with_value.append({**p, 'value': value})
+        
+        # Target the bottom 8 players by value for potential transfer
+        poor_value_players = sorted(squad_with_value, key=lambda p: p['value'])[:8]
+        print(f"Identifying poor-value players to transfer out: {[p['web_name'] for p in poor_value_players]}")
 
         best_double_transfer = None
-        highest_score_gain = 0
+        highest_gain = 0
 
-        # Iterate through every possible pair of weak players to transfer out
-        for p_out1, p_out2 in itertools.combinations(weakest_players, 2):
+        # --- 2. Iterate through pairs of poor-value players to find the best swap ---
+        for p_out1, p_out2 in itertools.combinations(poor_value_players, 2):
             
-            squad_positions = self._get_squad_positions()
-            if p_out1['position_name'] == p_out2['position_name'] and squad_positions[p_out1['position_name']] <= SQUAD_RULES['POSITIONS'][p_out1['position_name']] - 1:
-                 continue
-
-            # --- 2. Find the best replacements for this pair ---
-            budget_for_replacements = (p_out1['now_cost'] + p_out2['now_cost'])
-
-            # Find candidates for each player being transferred out
-            candidates1 = self._find_potential_replacements(p_out1, budget_for_replacements, self.squad_player_ids - {p_out2['id']})
+            # --- 3. Determine the total budget freed up by selling these two players ---
+            total_budget = p_out1['now_cost'] + p_out2['now_cost']
             
-            # If we find a good replacement for p_out1, find a partner for p_out2
-            if candidates1:
-                # Take the top 5 candidates for the first player
-                for p_in1 in sorted(candidates1, key=lambda p: self._calculate_ai_score(p), reverse=True)[:5]:
-                    
-                    remaining_budget = budget_for_replacements - p_in1['now_cost']
-                    
-                    # Now find the best partner for p_out2 with the remaining budget
-                    candidates2 = self._find_potential_replacements(p_out2, remaining_budget, self.squad_player_ids - {p_out1['id'], p_in1['id']})
-                    
-                    if candidates2:
-                        p_in2 = max(candidates2, key=lambda p: self._calculate_ai_score(p))
-                        
-                        # Calculate the net gain from this double transfer
-                        original_score = self._calculate_ai_score(p_out1) + self._calculate_ai_score(p_out2)
-                        new_score = self._calculate_ai_score(p_in1) + self._calculate_ai_score(p_in2)
-                        score_gain = new_score - original_score
+            # --- 4. Find the best possible individual replacements for each position ---
+            # We search for the absolute best players we could afford for each slot
+            # if we dedicated the entire budget to that one position.
+            
+            # Potential replacements for Player 1
+            candidates1 = self._find_potential_replacements(p_out1, total_budget, self.squad_player_ids - {p_out2['id']})
+            
+            # Potential replacements for Player 2
+            candidates2 = self._find_potential_replacements(p_out2, total_budget, self.squad_player_ids - {p_out1['id']})
 
-                        if score_gain > highest_score_gain:
-                            highest_score_gain = score_gain
-                            # --- Attach fixture data for reasoning ---
-                            p_out1['upcoming_fixtures'] = self._get_upcoming_fixtures(p_out1)
-                            p_out2['upcoming_fixtures'] = self._get_upcoming_fixtures(p_out2)
-                            p_in1['upcoming_fixtures'] = self._get_upcoming_fixtures(p_in1)
-                            p_in2['upcoming_fixtures'] = self._get_upcoming_fixtures(p_in2)
-                            # ---
-                            best_double_transfer = ([p_out1, p_out2], [p_in1, p_in2])
+            if not candidates1 or not candidates2:
+                continue
+
+            # --- 5. Find the optimal *pair* of replacements within the budget ---
+            # This is the crucial step: instead of just finding one good player, we
+            # find the best combination of two that fits the budget.
+            
+            for c1 in sorted(candidates1, key=lambda p: p['ai_score'], reverse=True)[:10]: # Top 10 candidates
+                remaining_budget = total_budget - c1['now_cost']
+                
+                # Find the best partner for c1 from the second list of candidates
+                best_partner = None
+                for c2 in candidates2:
+                    if c2['id'] != c1['id'] and c2['now_cost'] <= remaining_budget:
+                        if best_partner is None or c2['ai_score'] > best_partner['ai_score']:
+                            best_partner = c2
+                
+                if best_partner:
+                    current_gain = (c1['ai_score'] + best_partner['ai_score']) - (p_out1['ai_score'] + p_out2['ai_score'])
+                    
+                    if current_gain > highest_gain:
+                        highest_gain = current_gain
+                        best_double_transfer = ([p_out1, p_out2], [c1, best_partner])
+                        print(f"  New best pair found: ({p_out1['web_name']}, {p_out2['web_name']}) -> ({c1['web_name']}, {best_partner['web_name']}) | Gain: +{highest_gain:.2f}")
 
         if not best_double_transfer:
+            print("--- No beneficial double transfer found. ---")
             return None
 
+        # --- 6. Final processing and reasoning generation ---
         players_out, players_in = best_double_transfer
+        
+        # Attach fixture data for reasoning
+        for p in players_out + players_in:
+            p['upcoming_fixtures'] = self._get_upcoming_fixtures(p)
+
+        print(f"\nOptimal Double Transfer Found: ({players_out[0]['web_name']}, {players_out[1]['web_name']}) -> ({players_in[0]['web_name']}, {players_in[1]['web_name']})")
+        self._print_player_score_analysis(players_out[0])
+        self._print_player_score_analysis(players_out[1])
+        self._print_player_score_analysis(players_in[0])
+        self._print_player_score_analysis(players_in[1])
         
         reason = None
         if reasoning_generator:
-            # Generate a combined reason for the double transfer
             reasoning_tasks = [
                 reasoning_generator(p_out, p_in) 
                 for p_out, p_in in zip(players_out, players_in)
@@ -592,7 +794,7 @@ class SquadAnalyzer:
         return {
             "players_out": players_out,
             "players_in": players_in,
-            "score_gain": round(highest_score_gain, 2),
+            "score_gain": round(highest_gain, 2),
             "reason": reason
         }
 

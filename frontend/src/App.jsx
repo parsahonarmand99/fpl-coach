@@ -94,7 +94,7 @@ function App() {
         throw new Error("Failed to build a random squad. The server might be busy.");
       }
       const randomSquad = await response.json();
-      setSquad(randomSquad);
+      setSquad(randomSquad.squad);
     } catch (error) {
       alert(error.message);
     } finally {

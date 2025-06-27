@@ -107,10 +107,22 @@ const SquadAnalysisPage = () => {
 
             <div className="analysis-details-wrapper">
                 <div className="analysis-section">
-                    <h2>Captaincy Pick</h2>
-                    <div className="suggestion-card captain-card">
-                        <p className="captain-name">{analysis.captain_suggestion.web_name}</p>
-                        <p className="captain-team">{analysis.captain_suggestion.team_name}</p>
+                    <h2>Captaincy Picks</h2>
+                    <div className="captaincy-container">
+                        {analysis.captain_suggestion && (
+                            <div className="suggestion-card captain-card">
+                                <div className="captain-label">CAPTAIN (C)</div>
+                                <p className="captain-name">{analysis.captain_suggestion.web_name}</p>
+                                <p className="captain-team">{analysis.captain_suggestion.team_name}</p>
+                            </div>
+                        )}
+                        {analysis.vice_captain_suggestion && (
+                            <div className="suggestion-card captain-card vice-captain-card">
+                                <div className="captain-label">VICE-CAPTAIN (V)</div>
+                                <p className="captain-name">{analysis.vice_captain_suggestion.web_name}</p>
+                                <p className="captain-team">{analysis.vice_captain_suggestion.team_name}</p>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -167,10 +179,10 @@ const SquadAnalysisPage = () => {
                             <div className="player-name">{transfer.player_in.web_name}</div>
                             <div className="player-team">{transfer.player_in.team_name}</div>
                           </div>
-                          <div className="score-gain-container">
+                        </div>
+                        <div className="score-gain-container">
                             <div className="score-gain-header">AI Score Gain</div>
                             <div className="score-gain-value">+{transfer.score_gain.toFixed(1)}</div>
-                          </div>
                         </div>
                         {transfer.reason && (
                           <div className="transfer-reason">
