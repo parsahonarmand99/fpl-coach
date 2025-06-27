@@ -139,6 +139,11 @@ const SquadAnalysisPage = () => {
                         <div className="score-gain">
                             <p className="label">Total AI Score Gain</p>
                             <p className="score-value">+{analysis.double_transfer_suggestion.score_gain.toFixed(1)}</p>
+                            {analysis.double_transfer_suggestion.reason && (
+                            <div className="transfer-reasoning">
+                                <p className="reasoning-text">{analysis.double_transfer_suggestion.reason}</p>
+                            </div>
+                    )}
                         </div>
                     </div>
                 </div>
@@ -147,23 +152,30 @@ const SquadAnalysisPage = () => {
             <div className="analysis-section">
                 <h2>Top Transfer Suggestions</h2>
                 {analysis.suggested_transfers.map((transfer, index) => (
-                    <div key={index} className="suggestion-card transfer-card">
-                        <div className="transfer-player-out">
-                            <p className="label">OUT</p>
-                            <p className="player-name">{transfer.player_out.web_name}</p>
-                            <p className="team-name">{transfer.player_out.team_name}</p>
-                        </div>
-                        <div className="transfer-arrow">&rarr;</div>
-                        <div className="transfer-player-in">
-                            <p className="label">IN</p>
-                            <p className="player-name">{transfer.player_in.web_name}</p>
-                            <p className="team-name">{transfer.player_in.team_name}</p>
-                        </div>
-                        <div className="score-gain">
-                            <p className="label">AI Score Gain</p>
-                            <p className="score-value">+{transfer.score_gain.toFixed(1)}</p>
-                        </div>
+                  <div className="suggestion-card transfer-card" key={index}>
+                    <div className="transfer-details">
+                      <div className="player-out">
+                        <div className="transfer-header">OUT</div>
+                        <div className="player-name">{transfer.player_out.web_name}</div>
+                        <div className="player-team">{transfer.player_out.team_name}</div>
+                      </div>
+                      <div className="transfer-arrow">→</div>
+                      <div className="player-in">
+                        <div className="transfer-header">IN</div>
+                        <div className="player-name">{transfer.player_in.web_name}</div>
+                        <div className="player-team">{transfer.player_in.team_name}</div>
+                      </div>
+                      <div className="score-gain-container">
+                        <div className="score-gain-header">AI Score Gain</div>
+                        <div className="score-gain-value">+{transfer.score_gain.toFixed(1)}</div>
+                      </div>
                     </div>
+                    {transfer.reason && (
+                      <div className="transfer-reason">
+                        <p>{transfer.reason}</p>
+                      </div>
+                    )}
+                  </div>
                 ))}
                  {analysis.suggested_transfers.length === 0 && (
                     <div className="suggestion-card">

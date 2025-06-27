@@ -1,5 +1,6 @@
 import random
 import itertools
+import asyncio
 from collections import Counter
 from typing import List, Dict, Any
 from pydantic import BaseModel
@@ -297,7 +298,7 @@ class SquadAnalyzer:
         """Suggests the player with the highest AI score as captain."""
         return max(self.user_squad, key=lambda p: p.get('ai_score', 0))
 
-    def suggest_transfers(self, num_suggestions=5):
+    async def suggest_transfers(self, num_suggestions=5, reasoning_generator=None):
         """
         Suggests the top N unique transfers for the user's squad.
         It finds the best possible 1-for-1 player swaps, ensuring no player
@@ -305,7 +306,7 @@ class SquadAnalyzer:
         """
         potential_transfers = []
 
-        # First, generate all possible valid transfers
+        # First, generate all possible valid transfers without reasoning
         for i, player_out in enumerate(self.user_squad):
             candidate_pool = self.player_map_by_pos[player_out['position_name']]
             
@@ -324,11 +325,12 @@ class SquadAnalyzer:
 
                 score_gain = player_in.get('ai_score', 0) - player_out.get('ai_score', 0)
                 if score_gain > 0:
-                    potential_transfers.append({
+                    transfer_suggestion = {
                         "player_out": player_out,
                         "player_in": player_in,
                         "score_gain": score_gain
-                    })
+                    }
+                    potential_transfers.append(transfer_suggestion)
         
         # Sort all potential transfers by the score gain
         potential_transfers.sort(key=lambda x: x['score_gain'], reverse=True)
@@ -349,9 +351,24 @@ class SquadAnalyzer:
             if len(final_suggestions) >= num_suggestions:
                 break
         
+        # Generate reasoning for the final suggestions in parallel
+        if reasoning_generator and final_suggestions:
+            try:
+                reasoning_tasks = [
+                    reasoning_generator(t['player_out'], t['player_in'])
+                    for t in final_suggestions
+                ]
+                reasons = await asyncio.gather(*reasoning_tasks)
+                for i, transfer in enumerate(final_suggestions):
+                    transfer['reason'] = reasons[i]
+            except Exception as e:
+                print(f"Error generating reasons in parallel: {e}")
+                for transfer in final_suggestions:
+                    transfer['reason'] = "Could not generate AI reasoning due to a technical issue."
+
         return final_suggestions
 
-    def suggest_double_transfers(self):
+    async def suggest_double_transfers(self, reasoning_generator=None):
         """
         Suggests the single best 2-for-2 transfer to maximize AI score gain.
         This is computationally expensive, so it's heavily optimized.
@@ -417,6 +434,31 @@ class SquadAnalyzer:
                             "players_in": [player_in_A, player_in_B],
                             "score_gain": score_gain
                         }
+        
+        # After finding the best transfer, generate its reasoning
+        if best_double_transfer and reasoning_generator:
+            try:
+                player_out_A, player_out_B = best_double_transfer['players_out']
+                player_in_A, player_in_B = best_double_transfer['players_in']
+                
+                # For double transfers, we can call the same generator.
+                # The generator function is now expected to handle combined player details.
+                player_out_combined = {
+                    "web_name": f"{player_out_A.get('web_name', 'A')} & {player_out_B.get('web_name', 'B')}",
+                    "form": (float(player_out_A.get('form', 0)) + float(player_out_B.get('form', 0))) / 2,
+                    "ict_index": (float(player_out_A.get('ict_index', 0)) + float(player_out_B.get('ict_index', 0))) / 2,
+                    "points_per_game": (float(player_out_A.get('points_per_game', 0)) + float(player_out_B.get('points_per_game', 0))) / 2,
+                }
+                player_in_combined = {
+                    "web_name": f"{player_in_A.get('web_name', 'A')} & {player_in_B.get('web_name', 'B')}",
+                    "form": (float(player_in_A.get('form', 0)) + float(player_in_B.get('form', 0))) / 2,
+                    "ict_index": (float(player_in_A.get('ict_index', 0)) + float(player_in_B.get('ict_index', 0))) / 2,
+                    "points_per_game": (float(player_in_A.get('points_per_game', 0)) + float(player_in_B.get('points_per_game', 0))) / 2,
+                }
+                best_double_transfer["reason"] = await reasoning_generator(player_out_combined, player_in_combined)
+            except Exception as e:
+                print(f"Error generating reasoning for double transfer: {e}")
+                best_double_transfer["reason"] = "Double transfer suggested for significant AI score improvement."
 
         return best_double_transfer
 

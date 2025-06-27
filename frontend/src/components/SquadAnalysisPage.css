@@ -49,58 +49,70 @@
 
 .transfer-card {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    background-color: #2a004f;
+    border: 1px solid #4a148c;
+    border-radius: 8px;
 }
 
-.double-transfer-card {
+.transfer-details {
     display: flex;
-    align-items: center;
     justify-content: space-between;
+    align-items: center;
+    width: 100%;
 }
 
-.transfer-column {
+.player-out, .player-in, .score-gain-container {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    flex-basis: 35%;
-}
-
-.transfer-player {
-    background-color: rgba(0,0,0,0.1);
-    padding: 0.5rem;
-    border-radius: 4px;
-}
-
-.transfer-player-out, .transfer-player-in {
-    flex-basis: 35%;
+    align-items: center;
+    text-align: center;
+    flex-basis: 30%;
 }
 
 .transfer-arrow {
     font-size: 2.5rem;
-    color: var(--fpl-green);
+    color: #00ff87;
+    flex-basis: 10%;
+    text-align: center;
 }
 
-.label {
-    font-size: 0.9rem;
-    color: var(--fpl-text-secondary);
-    margin-bottom: 0.5rem;
+.transfer-header, .score-gain-header {
+    font-size: 0.8rem;
+    color: #b3b3b3;
+    text-transform: uppercase;
+    margin-bottom: 0.25rem;
 }
+
 .player-name {
     font-size: 1.4rem;
     font-weight: bold;
-    margin: 0;
+    color: #fff;
+    margin-bottom: 0.25rem;
 }
-.team-name {
-    font-size: 1rem;
-    color: var(--fpl-text-secondary);
-    margin: 0.25rem 0 0 0;
+
+.player-team {
+    font-size: 0.9rem;
+    color: #b3b3b3;
 }
-.score-value {
-    font-size: 1.5rem;
+
+.score-gain-value {
+    font-size: 2rem;
     font-weight: bold;
-    color: var(--fpl-green);
-    margin: 0;
+    color: #00ff87;
+}
+
+.transfer-reason {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #4a148c;
+    color: #ddd;
+    font-style: italic;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    text-align: center;
 }
 
 .back-link {
@@ -148,4 +160,20 @@
 .transfer-player-in .label,
 .transfer-column .label {
     text-transform: uppercase;
+}
+
+.transfer-reasoning {
+    width: 80%;
+    padding: 0.75rem;
+    background-color: rgba(0, 255, 135, 0.1);
+    border-left: 3px solid var(--fpl-green);
+    border-radius: 4px;
+}
+
+.reasoning-text {
+    font-size: 0.9rem;
+    color: var(--fpl-text-secondary);
+    margin: 0;
+    line-height: 1.4;
+    font-style: italic;
 } 

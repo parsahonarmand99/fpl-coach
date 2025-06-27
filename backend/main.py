@@ -6,7 +6,8 @@ from dotenv import load_dotenv
 from unidecode import unidecode
 from squad_builder import GeneticSquadBuilder, SquadAnalyzer
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
+from openai import AsyncAzureOpenAI
 
 load_dotenv()
 
@@ -15,6 +16,17 @@ app = FastAPI()
 SPORTMONKS_API_KEY = os.getenv("SPORTMONKS_API_KEY")
 SPORTMONKS_API_URL = "https://api.sportmonks.com/v3/football"
 PREMIER_LEAGUE_ID = 8 # Found via SportMonks documentation
+
+# OpenAI Configuration
+OPENAI_API_KEY = os.getenv("OPEN_AI_CREDS")
+OPENAI_ENDPOINT = os.getenv("OPEN_AI_HOST")
+
+# Initialize Azure OpenAI client
+client = AsyncAzureOpenAI(
+    api_key=OPENAI_API_KEY,
+    api_version="2024-02-01",
+    azure_endpoint=OPENAI_ENDPOINT
+)
 
 class Player(BaseModel):
     id: int
@@ -26,8 +38,86 @@ class Player(BaseModel):
     position_name: str
     ai_score: float
 
+class TransferSuggestion(BaseModel):
+    player_out: Player
+    player_in: Player
+    score_gain: float
+    reason: Optional[str] = None
+
+class DoubleTransferSuggestion(BaseModel):
+    players_out: List[Player]
+    players_in: List[Player]
+    score_gain: float
+    reason: Optional[str] = None
+
 class Squad(BaseModel):
     squad: List[Player]
+
+async def generate_transfer_reasoning(player_out, player_in):
+    """
+    Generate a human-readable reason for a transfer suggestion using Azure OpenAI.
+    """
+    try:
+        # Prepare player data for the prompt, focusing on key stats
+        player_out_data = {
+            'name': player_out.get('web_name', 'Unknown'),
+            'form': player_out.get('form', 0),
+            'ict_index': player_out.get('ict_index', 0),
+            'points_per_game': player_out.get('points_per_game', 0),
+        }
+        
+        player_in_data = {
+            'name': player_in.get('web_name', 'Unknown'),
+            'form': player_in.get('form', 0),
+            'ict_index': player_in.get('ict_index', 0),
+            'points_per_game': player_in.get('points_per_game', 0),
+        }
+        
+        # Format stats to one decimal place for the prompt
+        for p_data in [player_out_data, player_in_data]:
+            for key in ['form', 'ict_index', 'points_per_game']:
+                if isinstance(p_data[key], (int, float)):
+                    p_data[key] = f"{p_data[key]:.1f}"
+
+        # Create the new data-driven prompt
+        prompt = f"""You are an expert Fantasy Premier League (FPL) analyst. Your task is to provide a compelling, data-driven reason for a player transfer in 1-2 sentences.
+
+**Instructions:**
+- **Incorporate specific stats** to justify the recommendation (e.g., PPG, ICT Index, Form).
+- Keep the reasoning concise and to the point (max 2 sentences).
+
+**Player to transfer OUT:**
+- Name: {player_out_data['name']}
+- Form: {player_out_data['form']}
+- ICT Index: {player_out_data['ict_index']}
+- Points Per Game (PPG): {player_out_data['points_per_game']}
+
+**Player to transfer IN:**
+- Name: {player_in_data['name']}
+- Form: {player_in_data['form']}
+- ICT Index: {player_in_data['ict_index']}
+- Points Per Game (PPG): {player_in_data['points_per_game']}
+
+**Example Reasoning:** "Consider swapping Toney for Isak. Isak has a better PPG (5.9 vs 4.5) and a higher ICT Index (12.5 vs 10.2), indicating stronger recent performance and involvement."
+
+**Your Reasoning:**
+"""
+
+        response = await client.chat.completions.create(
+            model="clio-assistant-gpt-4o-mini-4",
+            messages=[
+                {"role": "system", "content": "You are an expert FPL analyst who provides concise, data-driven transfer advice."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=100,
+            temperature=0.7
+        )
+        
+        return response.choices[0].message.content.strip()
+    
+    except Exception as e:
+        print(f"Error generating transfer reasoning: {e}")
+        return "Transfer suggested based on improved AI score and statistical analysis."
 
 @app.get("/")
 def read_root():
@@ -125,6 +215,11 @@ def get_players_data():
         player['team_short_name'] = teams.get(player['team'], {}).get('short_name')
         player['position_name'] = positions.get(player['element_type'])
         player['upcoming_fixtures'] = team_fixtures.get(player['team'], [])
+
+    # Add team_code for badge URLs
+    team_code_map = {team['id']: team['code'] for team in bootstrap_data['teams']}
+    for player in players:
+        player['team_code'] = team_code_map.get(player['team'])
 
     return players
 
@@ -254,7 +349,7 @@ async def get_random_squad():
         raise HTTPException(status_code=500, detail="An internal server error occurred while generating a random squad.")
 
 @app.post("/api/analyze-squad")
-def analyze_squad_endpoint(squad_data: Squad):
+async def analyze_squad_endpoint(squad_data: Squad):
     try:
         all_players = get_players_data()
         user_squad_list = [p.dict() for p in squad_data.squad]
@@ -265,13 +360,34 @@ def analyze_squad_endpoint(squad_data: Squad):
         )
         
         captain = analyzer.suggest_captain()
-        transfers = analyzer.suggest_transfers()
-        double_transfer = analyzer.suggest_double_transfers()
+        transfers = await analyzer.suggest_transfers(reasoning_generator=generate_transfer_reasoning)
+        double_transfer = await analyzer.suggest_double_transfers(reasoning_generator=generate_transfer_reasoning)
+        
+        # Convert transfers to TransferSuggestion objects
+        transfer_suggestions = []
+        for transfer in transfers:
+            transfer_suggestion = TransferSuggestion(
+                player_out=Player(**transfer['player_out']),
+                player_in=Player(**transfer['player_in']),
+                score_gain=transfer['score_gain'],
+                reason=transfer.get('reason')
+            )
+            transfer_suggestions.append(transfer_suggestion)
+        
+        # Convert double transfer to DoubleTransferSuggestion object if it exists
+        double_transfer_suggestion = None
+        if double_transfer:
+            double_transfer_suggestion = DoubleTransferSuggestion(
+                players_out=[Player(**p) for p in double_transfer['players_out']],
+                players_in=[Player(**p) for p in double_transfer['players_in']],
+                score_gain=double_transfer['score_gain'],
+                reason=double_transfer.get('reason')
+            )
         
         return {
             "captain_suggestion": captain,
-            "suggested_transfers": transfers,
-            "double_transfer_suggestion": double_transfer
+            "suggested_transfers": transfer_suggestions,
+            "double_transfer_suggestion": double_transfer_suggestion
         }
     except Exception as e:
         # Log the exception for debugging
