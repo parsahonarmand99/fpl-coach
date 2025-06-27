@@ -54,6 +54,7 @@ async def generate_transfer_reasoning(player_out, player_in):
             'form': player_out.get('form', 0),
             'ict_index': player_out.get('ict_index', 0),
             'points_per_game': player_out.get('points_per_game', 0),
+            'fixtures': ", ".join([f"{f['opponent']}({f['location']})" for f in player_out.get('upcoming_fixtures', [])]) or "N/A"
         }
         
         player_in_data = {
@@ -61,6 +62,7 @@ async def generate_transfer_reasoning(player_out, player_in):
             'form': player_in.get('form', 0),
             'ict_index': player_in.get('ict_index', 0),
             'points_per_game': player_in.get('points_per_game', 0),
+            'fixtures': ", ".join([f"{f['opponent']}({f['location']})" for f in player_in.get('upcoming_fixtures', [])]) or "N/A"
         }
         
         # Format stats to one decimal place for the prompt
@@ -74,6 +76,7 @@ async def generate_transfer_reasoning(player_out, player_in):
 
 **Instructions:**
 - **Incorporate specific stats** to justify the recommendation (e.g., PPG, ICT Index, Form).
+- **Compare the upcoming fixtures** and mention if the incoming player has an easier schedule.
 - Keep the reasoning concise and to the point (max 2 sentences).
 
 **Player to transfer OUT:**
@@ -81,14 +84,16 @@ async def generate_transfer_reasoning(player_out, player_in):
 - Form: {player_out_data['form']}
 - ICT Index: {player_out_data['ict_index']}
 - Points Per Game (PPG): {player_out_data['points_per_game']}
+- Upcoming Fixtures: {player_out_data['fixtures']}
 
 **Player to transfer IN:**
 - Name: {player_in_data['name']}
 - Form: {player_in_data['form']}
 - ICT Index: {player_in_data['ict_index']}
 - Points Per Game (PPG): {player_in_data['points_per_game']}
+- Upcoming Fixtures: {player_in_data['fixtures']}
 
-**Example Reasoning:** "Consider swapping Toney for Isak. Isak has a better PPG (5.9 vs 4.5) and a higher ICT Index (12.5 vs 10.2), indicating stronger recent performance and involvement."
+**Example Reasoning:** "Consider swapping Toney for Isak. Isak not only has a better PPG (5.9 vs 4.5) but also faces an easier run of fixtures (BOU (H), SHU (A)) compared to Toney's difficult schedule."
 
 **Your Reasoning:**
 """
