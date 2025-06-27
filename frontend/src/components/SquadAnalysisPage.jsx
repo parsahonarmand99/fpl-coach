@@ -105,83 +105,85 @@ const SquadAnalysisPage = () => {
                 </div>
             </div>
 
-            <div className="analysis-section">
-                <h2>Captaincy Pick</h2>
-                <div className="suggestion-card captain-card">
-                    <p className="captain-name">{analysis.captain_suggestion.web_name}</p>
-                    <p className="captain-team">{analysis.captain_suggestion.team_name}</p>
-                </div>
-            </div>
-
-            {analysis.double_transfer_suggestion && (
+            <div className="analysis-details-wrapper">
                 <div className="analysis-section">
-                    <h2>Strategic Double Transfer</h2>
-                    <div className="suggestion-card double-transfer-card">
-                        <div className="transfer-column">
-                            <p className="label">OUT</p>
-                            {analysis.double_transfer_suggestion.players_out.map(p => (
-                                <div key={p.id} className="transfer-player">
-                                    <p className="player-name">{p.web_name}</p>
-                                    <p className="team-name">{p.team_name}</p>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="transfer-arrow">&rArr;</div>
-                        <div className="transfer-column">
-                            <p className="label">IN</p>
-                             {analysis.double_transfer_suggestion.players_in.map(p => (
-                                <div key={p.id} className="transfer-player">
-                                    <p className="player-name">{p.web_name}</p>
-                                    <p className="team-name">{p.team_name}</p>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="score-gain">
-                            <p className="label">Total AI Score Gain</p>
-                            <p className="score-value">+{analysis.double_transfer_suggestion.score_gain.toFixed(1)}</p>
-                            {analysis.double_transfer_suggestion.reason && (
-                            <div className="transfer-reasoning">
-                                <p className="reasoning-text">{analysis.double_transfer_suggestion.reason}</p>
-                            </div>
-                    )}
-                        </div>
+                    <h2>Captaincy Pick</h2>
+                    <div className="suggestion-card captain-card">
+                        <p className="captain-name">{analysis.captain_suggestion.web_name}</p>
+                        <p className="captain-team">{analysis.captain_suggestion.team_name}</p>
                     </div>
                 </div>
-            )}
 
-            <div className="analysis-section">
-                <h2>Top Transfer Suggestions</h2>
-                {analysis.suggested_transfers.map((transfer, index) => (
-                  <div className="suggestion-card transfer-card" key={index}>
-                    <div className="transfer-details">
-                      <div className="player-out">
-                        <div className="transfer-header">OUT</div>
-                        <div className="player-name">{transfer.player_out.web_name}</div>
-                        <div className="player-team">{transfer.player_out.team_name}</div>
-                      </div>
-                      <div className="transfer-arrow">→</div>
-                      <div className="player-in">
-                        <div className="transfer-header">IN</div>
-                        <div className="player-name">{transfer.player_in.web_name}</div>
-                        <div className="player-team">{transfer.player_in.team_name}</div>
-                      </div>
-                      <div className="score-gain-container">
-                        <div className="score-gain-header">AI Score Gain</div>
-                        <div className="score-gain-value">+{transfer.score_gain.toFixed(1)}</div>
-                      </div>
-                    </div>
-                    {transfer.reason && (
-                      <div className="transfer-reason">
-                        <p>{transfer.reason}</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-                 {analysis.suggested_transfers.length === 0 && (
-                    <div className="suggestion-card">
-                        <p>No immediate transfers suggested. Your squad is looking strong!</p>
+                {analysis.double_transfer_suggestion && (
+                    <div className="analysis-section">
+                        <h2>Strategic Double Transfer</h2>
+                        <div className="suggestion-card double-transfer-card">
+                            <div className="transfer-column">
+                                <p className="label">OUT</p>
+                                {analysis.double_transfer_suggestion.players_out.map(p => (
+                                    <div key={p.id} className="transfer-player">
+                                        <p className="player-name">{p.web_name}</p>
+                                        <p className="team-name">{p.team_name}</p>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="transfer-arrow">&rArr;</div>
+                            <div className="transfer-column">
+                                <p className="label">IN</p>
+                                 {analysis.double_transfer_suggestion.players_in.map(p => (
+                                    <div key={p.id} className="transfer-player">
+                                        <p className="player-name">{p.web_name}</p>
+                                        <p className="team-name">{p.team_name}</p>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="score-gain">
+                                <p className="label">Total AI Score Gain</p>
+                                <p className="score-value">+{analysis.double_transfer_suggestion.score_gain.toFixed(1)}</p>
+                                {analysis.double_transfer_suggestion.reason && (
+                                <div className="transfer-reasoning">
+                                    <p className="reasoning-text">{analysis.double_transfer_suggestion.reason}</p>
+                                </div>
+                        )}
+                            </div>
+                        </div>
                     </div>
                 )}
+
+                <div className="analysis-section">
+                    <h2>Top Transfer Suggestions</h2>
+                    {analysis.suggested_transfers.map((transfer, index) => (
+                      <div className="suggestion-card transfer-card" key={index}>
+                        <div className="transfer-details">
+                          <div className="player-out">
+                            <div className="transfer-header">OUT</div>
+                            <div className="player-name">{transfer.player_out.web_name}</div>
+                            <div className="player-team">{transfer.player_out.team_name}</div>
+                          </div>
+                          <div className="transfer-arrow">→</div>
+                          <div className="player-in">
+                            <div className="transfer-header">IN</div>
+                            <div className="player-name">{transfer.player_in.web_name}</div>
+                            <div className="player-team">{transfer.player_in.team_name}</div>
+                          </div>
+                          <div className="score-gain-container">
+                            <div className="score-gain-header">AI Score Gain</div>
+                            <div className="score-gain-value">+{transfer.score_gain.toFixed(1)}</div>
+                          </div>
+                        </div>
+                        {transfer.reason && (
+                          <div className="transfer-reason">
+                            <p>{transfer.reason}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                     {analysis.suggested_transfers.length === 0 && (
+                        <div className="suggestion-card">
+                            <p>No immediate transfers suggested. Your squad is looking strong!</p>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

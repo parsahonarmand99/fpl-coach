@@ -1,7 +1,6 @@
 .analysis-container {
-    max-width: 2000px;
-    margin: 2rem auto;
     padding: 2rem;
+    margin: 0 auto;
     color: var(--fpl-text-primary);
 }
 
@@ -11,6 +10,11 @@
     background-color: var(--fpl-purple);
     border-radius: 8px;
     padding: 3rem;
+}
+
+.analysis-container h1, .analysis-container h2 {
+    color: var(--fpl-text-primary);
+    text-align: center;
 }
 
 .analysis-container h1 {
@@ -176,4 +180,9 @@
     margin: 0;
     line-height: 1.4;
     font-style: italic;
+}
+
+.analysis-details-wrapper {
+    max-width: 900px;
+    margin: 0 auto;
 } 

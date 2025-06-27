@@ -8,8 +8,11 @@ const PlayerOnPitch = ({ player, isHighlighted, highlightColor, grayscale }) => 
 
   // The FPL API does not reliably provide shirt images,
   // so we'll use the official Premier League badges as a fallback.
+  if (player.team_code) {
+    console.log(player)
+  }
   const badgeUrl = `https://resources.premierleague.com/premierleague/badges/70/t${player.team_code}.png`;
-
+  console.log(badgeUrl)
   const playerClasses = ['player-on-pitch'];
   if (grayscale) {
     playerClasses.push('grayscale');

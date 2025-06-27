@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from unidecode import unidecode
 from squad_builder import GeneticSquadBuilder, SquadAnalyzer
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from openai import AsyncAzureOpenAI
 
 load_dotenv()
@@ -28,30 +28,20 @@ client = AsyncAzureOpenAI(
     azure_endpoint=OPENAI_ENDPOINT
 )
 
-class Player(BaseModel):
-    id: int
-    web_name: str
-    now_cost: int
-    team: int
-    team_name: str
-    team_short_name: str
-    position_name: str
-    ai_score: float
-
 class TransferSuggestion(BaseModel):
-    player_out: Player
-    player_in: Player
+    player_out: Dict[str, Any]
+    player_in: Dict[str, Any]
     score_gain: float
     reason: Optional[str] = None
 
 class DoubleTransferSuggestion(BaseModel):
-    players_out: List[Player]
-    players_in: List[Player]
+    players_out: List[Dict[str, Any]]
+    players_in: List[Dict[str, Any]]
     score_gain: float
     reason: Optional[str] = None
 
 class Squad(BaseModel):
-    squad: List[Player]
+    squad: List[Dict[str, Any]]
 
 async def generate_transfer_reasoning(player_out, player_in):
     """
@@ -350,14 +340,14 @@ async def get_random_squad():
 
 @app.post("/api/analyze-squad")
 async def analyze_squad_endpoint(squad_data: Squad):
+    """
+    Analyzes a user's squad and suggests transfers.
+    """
     try:
         all_players = get_players_data()
-        user_squad_list = [p.dict() for p in squad_data.squad]
-
-        analyzer = SquadAnalyzer(
-            user_squad=user_squad_list,
-            all_players=all_players
-        )
+        user_squad_data = squad_data.squad # No longer need to convert from Pydantic models
+        
+        analyzer = SquadAnalyzer(user_squad=user_squad_data, all_players=all_players)
         
         captain = analyzer.suggest_captain()
         transfers = await analyzer.suggest_transfers(reasoning_generator=generate_transfer_reasoning)
@@ -367,8 +357,8 @@ async def analyze_squad_endpoint(squad_data: Squad):
         transfer_suggestions = []
         for transfer in transfers:
             transfer_suggestion = TransferSuggestion(
-                player_out=Player(**transfer['player_out']),
-                player_in=Player(**transfer['player_in']),
+                player_out=transfer['player_out'],
+                player_in=transfer['player_in'],
                 score_gain=transfer['score_gain'],
                 reason=transfer.get('reason')
             )
@@ -378,8 +368,8 @@ async def analyze_squad_endpoint(squad_data: Squad):
         double_transfer_suggestion = None
         if double_transfer:
             double_transfer_suggestion = DoubleTransferSuggestion(
-                players_out=[Player(**p) for p in double_transfer['players_out']],
-                players_in=[Player(**p) for p in double_transfer['players_in']],
+                players_out=double_transfer['players_out'],
+                players_in=double_transfer['players_in'],
                 score_gain=double_transfer['score_gain'],
                 reason=double_transfer.get('reason')
             )
