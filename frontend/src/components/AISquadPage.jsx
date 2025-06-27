@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import Loading from './Loading';
 import '../App.css'; 
 import Pitch from './Pitch';
 
@@ -38,6 +39,15 @@ const AISquadPage = () => {
     handleBuildAiSquad();
   }, []);
 
+  if (isAiLoading && squadData.starting_11.length === 0) {
+      return (
+          <Loading 
+              title="Building Your AI Squad..."
+              subtext="The AI is analyzing trillions of combinations to build your optimal team..."
+          />
+      )
+  }
+
   return (
     <div className="ai-squad-content">
       <Link to="/" className="back-button">
@@ -52,12 +62,6 @@ const AISquadPage = () => {
       </div>
 
       {error && <div className="error-message">Error: {error}</div>}
-
-      {isAiLoading && squadData.starting_11.length === 0 && (
-        <div className="loading-message">
-          Please wait, the AI is analyzing trillions of combinations to build your optimal team...
-        </div>
-      )}
 
       {squadData.starting_11.length > 0 && (
         <>

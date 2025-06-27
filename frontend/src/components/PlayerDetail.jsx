@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import Loading from './Loading';
 import './PlayerDetail.css';
 
 const PlayerDetail = () => {
@@ -27,7 +28,12 @@ const PlayerDetail = () => {
     fetchPlayerDetails();
   }, [playerId]);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return (
+    <Loading 
+      title="Loading Player Details..."
+      subtext="Fetching the latest stats and performance data."
+    />
+  );
   if (error) return <div>Error: {error}</div>;
   if (!playerData) return <div>No player data found.</div>;
 

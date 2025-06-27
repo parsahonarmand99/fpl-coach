@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import Pitch from './Pitch';
+import Loading from './Loading';
 import './SquadAnalysisPage.css';
 
 const SquadAnalysisPage = () => {
@@ -62,11 +63,10 @@ const SquadAnalysisPage = () => {
 
     if (loading) {
         return (
-            <div className="analysis-container loading">
-                <h2>Analyzing Your Squad...</h2>
-                <p>The AI is running the numbers, checking fixture difficulty, and identifying the best possible transfers for your team.</p>
-                <div className="spinner"></div>
-            </div>
+            <Loading 
+                title="Analyzing Your Squad..."
+                subtext="The AI is running the numbers, checking fixture difficulty, and identifying the best possible transfers for your team."
+            />
         );
     }
 
