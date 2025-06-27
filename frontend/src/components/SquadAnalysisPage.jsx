@@ -89,6 +89,9 @@ const SquadAnalysisPage = () => {
         );
     }
 
+    const isWildcard = analysis.chip_suggestion?.chip === 'Wildcard';
+    const suggestedSquad = isWildcard ? analysis.chip_suggestion.details.suggested_squad : newSquad;
+
     return (
         <div className="analysis-container">
             <Link to="/" className="back-link">&larr; Back to Home</Link>
@@ -97,15 +100,25 @@ const SquadAnalysisPage = () => {
             <div className="side-by-side-container">
                 <div className="pitch-wrapper">
                     <h3>Your Current Squad</h3>
-                    <Pitch squad={squad} highlightedPlayers={highlightedIds.out} highlightColor="red" grayscaleUnchanged={true}/>
+                    <Pitch squad={squad} highlightedPlayers={isWildcard ? squad.map(p => p.id) : highlightedIds.out} highlightColor="red" grayscaleUnchanged={true}/>
                 </div>
                 <div className="pitch-wrapper">
                     <h3>Suggested Squad</h3>
-                    <Pitch squad={newSquad} highlightedPlayers={highlightedIds.in} highlightColor="purple" grayscaleUnchanged={true}/>
+                    <Pitch squad={suggestedSquad} highlightedPlayers={isWildcard ? suggestedSquad.map(p => p.id) : highlightedIds.in} highlightColor="purple" grayscaleUnchanged={true}/>
                 </div>
             </div>
 
             <div className="analysis-details-wrapper">
+                {analysis.chip_suggestion && (
+                    <div className="analysis-section chip-suggestion-section">
+                        <h2>🔥 Strategic Chip Suggestion</h2>
+                        <div className="suggestion-card chip-card">
+                            <h3>{analysis.chip_suggestion.chip} Recommended!</h3>
+                            <p>{analysis.chip_suggestion.reason}</p>
+                        </div>
+                    </div>
+                )}
+
                 <div className="analysis-section">
                     <h2>Captaincy Picks</h2>
                     <div className="captaincy-container">

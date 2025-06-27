@@ -38,6 +38,30 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
+.chip-suggestion-section {
+    margin-bottom: 2rem;
+}
+
+.chip-card {
+    background: linear-gradient(45deg, #6d28d9, #4c1d95);
+    color: #ffffff;
+    border: 2px solid #a78bfa;
+    text-align: center;
+}
+
+.chip-card h3 {
+    font-size: 1.8rem;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+}
+
+.chip-card p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 0;
+}
+
 .captaincy-container {
     display: flex;
     gap: 16px;
@@ -188,21 +212,7 @@
   font-weight: bold;
 }
 
-/* Loading Spinner */
-.spinner {
-    border: 5px solid rgba(255, 255, 255, 0.2);
-    border-top: 5px solid var(--fpl-green);
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    animation: spin 1s linear infinite;
-    margin: 2rem auto 0;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
+/* Loading Spinner is now in App.css */
 
 .side-by-side-container {
     display: grid;

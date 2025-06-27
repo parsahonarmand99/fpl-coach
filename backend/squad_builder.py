@@ -2,7 +2,7 @@ import random
 import itertools
 import asyncio
 from collections import Counter
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple, Union
 from pydantic import BaseModel
 from fixture_service import create_fixture_difficulty_map
 
@@ -267,29 +267,43 @@ class GeneticSquadBuilder:
         ict_index = float(player.get('ict_index', 0))
         
         # Normalize form and ICT to be on a similar scale (e.g., 0-10)
-        # These max values are approximate and might need tuning.
         normalized_form = (form / 10) * 10
         normalized_ict = (ict_index / 400) * 10 
         
         # --- Fixture Difficulty Calculation ---
-        # Lower difficulty is better, so we invert the logic.
-        # A score of 1 is easiest, 5 is hardest. We want to reward easier fixtures.
         avg_difficulty = self._get_average_fixture_difficulty(player)
-        
-        # Scale from 1-5 to 0-1, where 1 is best (easiest fixtures)
         difficulty_score = (5 - avg_difficulty) / 4
         # ---
         
         # --- Final Weighted Score ---
         base_score = (normalized_form * form_weight) + (normalized_ict * ict_weight)
-        final_score = base_score * (1 + (difficulty_score * difficulty_weight))
+        score_after_fixtures = base_score * (1 + (difficulty_score * difficulty_weight))
         # ---
 
         # Add a small bonus for players who play more minutes
         minutes_bonus = (player.get('minutes', 0) / 3420) * 2 # Max minutes ~3420
-        final_score += minutes_bonus
+        final_score = score_after_fixtures + minutes_bonus
 
         return round(final_score, 2)
+
+    def _get_ai_score_components(self, player: Dict[str, Any]) -> Tuple:
+        """
+        Returns the detailed components of the AI score for analysis.
+        """
+        form_weight = 0.4
+        ict_weight = 0.4
+        difficulty_weight = 0.2
+        form = float(player.get('form', 0))
+        ict_index = float(player.get('ict_index', 0))
+        normalized_form = (form / 10) * 10
+        normalized_ict = (ict_index / 400) * 10
+        avg_difficulty = self._get_average_fixture_difficulty(player)
+        difficulty_score = (5 - avg_difficulty) / 4
+        base_score = (normalized_form * form_weight) + (normalized_ict * ict_weight)
+        score_after_fixtures = base_score * (1 + (difficulty_score * difficulty_weight))
+        minutes_bonus = (player.get('minutes', 0) / 3420) * 2
+        final_score = score_after_fixtures + minutes_bonus
+        return base_score, score_after_fixtures, minutes_bonus, final_score, avg_difficulty, difficulty_score, difficulty_weight
 
     def _calculate_fitness(self, squad):
         """
@@ -469,21 +483,26 @@ class SquadAnalyzer:
     Analyzes a user's squad and suggests improvements.
     """
     def __init__(self, user_squad: List[Dict[str, Any]], all_players: List[Dict[str, Any]]):
+        """
+        Initializes the Squad Analyzer.
+        - user_squad: A list of 15 players in the user's current squad.
+        - all_players: A list of all available players in the game.
+        """
+        print("\n--- Initializing Squad Analyzer ---")
         self.user_squad = user_squad
         self.all_players = all_players
         self.squad_player_ids = {p['id'] for p in user_squad}
-        self.budget = sum(p['now_cost'] / 10 for p in user_squad)
-        self.fixture_difficulty_map = create_fixture_difficulty_map()
         self.team_counts = Counter(p['team'] for p in user_squad)
-
-        # Pre-calculate AI scores for all players
-        for player in self.all_players:
-            player['ai_score'] = self._calculate_ai_score(player)
-
-        # Pre-calculate AI scores for the user's squad
+        
+        print("Fetching fixture difficulty map...")
+        self.fixture_difficulty_map = create_fixture_difficulty_map()
+        
+        # Pre-calculate AI scores for all players in the user's squad
+        print("Calculating AI scores for user squad...")
         for player in self.user_squad:
             player['ai_score'] = self._calculate_ai_score(player)
-            
+        print("--- Squad Analyzer Initialized ---")
+
     def _get_average_fixture_difficulty(self, player, num_games=5):
         """
         Calculates the average fixture difficulty for a player over the next N games.
@@ -520,61 +539,99 @@ class SquadAnalyzer:
         ict_index = float(player.get('ict_index', 0))
         
         # Normalize form and ICT to be on a similar scale (e.g., 0-10)
-        # These max values are approximate and might need tuning.
         normalized_form = (form / 10) * 10
         normalized_ict = (ict_index / 400) * 10 
         
         # --- Fixture Difficulty Calculation ---
-        # Lower difficulty is better, so we invert the logic.
-        # A score of 1 is easiest, 5 is hardest. We want to reward easier fixtures.
         avg_difficulty = self._get_average_fixture_difficulty(player)
-        
-        # Scale from 1-5 to 0-1, where 1 is best (easiest fixtures)
         difficulty_score = (5 - avg_difficulty) / 4
         # ---
         
         # --- Final Weighted Score ---
         base_score = (normalized_form * form_weight) + (normalized_ict * ict_weight)
-        final_score = base_score * (1 + (difficulty_score * difficulty_weight))
+        score_after_fixtures = base_score * (1 + (difficulty_score * difficulty_weight))
         # ---
 
         # Add a small bonus for players who play more minutes
         minutes_bonus = (player.get('minutes', 0) / 3420) * 2 # Max minutes ~3420
-        final_score += minutes_bonus
+        final_score = score_after_fixtures + minutes_bonus
 
         return round(final_score, 2)
-        
-    def _print_player_score_analysis(self, player: Dict[str, Any]):
+
+    def _get_ai_score_components(self, player: Dict[str, Any]) -> Tuple:
         """
-        Prints a detailed, formatted breakdown of a player's AI score calculation
-        for debugging and transparency.
+        Returns the detailed components of the AI score for analysis.
         """
-        print(f"--- Analysis for {player.get('web_name', 'N/A')} ---")
-        
-        # Re-run calculation logic to print each step
         form_weight = 0.4
         ict_weight = 0.4
         difficulty_weight = 0.2
-
         form = float(player.get('form', 0))
         ict_index = float(player.get('ict_index', 0))
-        
         normalized_form = (form / 10) * 10
-        normalized_ict = (ict_index / 400) * 10 
-        
+        normalized_ict = (ict_index / 400) * 10
         avg_difficulty = self._get_average_fixture_difficulty(player)
         difficulty_score = (5 - avg_difficulty) / 4
-        
         base_score = (normalized_form * form_weight) + (normalized_ict * ict_weight)
         score_after_fixtures = base_score * (1 + (difficulty_score * difficulty_weight))
-        
         minutes_bonus = (player.get('minutes', 0) / 3420) * 2
         final_score = score_after_fixtures + minutes_bonus
+        return base_score, score_after_fixtures, minutes_bonus, final_score, avg_difficulty, difficulty_score, difficulty_weight
 
-        print(f"  Base Stats       | Form: {form:.1f}, ICT Index: {ict_index:.1f}")
+    def _print_player_score_analysis(self, player: Dict[str, Any]):
+        print(f"--- Analysis for {player.get('web_name')} ---")
+        base_score, score_after_fixtures, minutes_bonus, final_score, avg_difficulty, difficulty_score, difficulty_weight = self._get_ai_score_components(player)
+        
+        print(f"  Base Stats       | Form: {player.get('form', 0)}, ICT Index: {player.get('ict_index', 0)}")
         print(f"  Fixture Analysis | Avg Difficulty: {avg_difficulty:.2f} -> Modifier: {1 + (difficulty_score * difficulty_weight):.3f}")
         print(f"  Calculated Score | Base: {base_score:.2f} | With Fixtures: {score_after_fixtures:.2f} | Bonus: +{minutes_bonus:.2f}")
         print(f"  >> Final AI Score: {final_score:.2f}")
+
+    def _get_starting_11(self, squad: List[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+        """
+        Determines the best starting 11 from a 15-player squad based on AI score.
+        Returns a tuple of (starting_11, bench).
+        """
+        best_lineup_score = 0
+        best_lineup = []
+        
+        for formation in VALID_FORMATIONS:
+            starters = []
+            
+            # Select the best players for the current formation based on AI score
+            for pos, count in formation.items():
+                pos_players = sorted(
+                    [p for p in squad if p.get('position_name') == pos],
+                    key=lambda x: x.get('ai_score', 0),
+                    reverse=True
+                )
+                starters.extend(pos_players[:count])
+            
+            current_score = sum(p.get('ai_score', 0) for p in starters)
+
+            if current_score > best_lineup_score:
+                best_lineup_score = current_score
+                best_lineup = starters
+        
+        starting_ids = {p['id'] for p in best_lineup}
+        bench = [p for p in squad if p['id'] not in starting_ids]
+        
+        return best_lineup, bench
+
+    def _get_player_fixture_count(self, player: Dict[str, Any], gameweek_range=1) -> int:
+        """
+        Counts how many fixtures a player has within a given number of upcoming gameweeks.
+        """
+        team_name = player.get('team_name')
+        if not team_name or team_name not in self.fixture_difficulty_map:
+            return 0
+
+        # This logic assumes the fixture map is for the very next gameweek.
+        # A more robust solution would filter by a specific gameweek ID.
+        upcoming_fixtures = self.fixture_difficulty_map.get(team_name, [])
+        
+        # For now, we assume the list contains fixtures for the immediate upcoming gameweek(s)
+        # and we just count them. A DGW would mean len > 1.
+        return len(upcoming_fixtures)
 
     def _get_upcoming_fixtures(self, player, num_games=5):
         """
@@ -599,6 +656,105 @@ class SquadAnalyzer:
         vice_captain = sorted_squad[1] if len(sorted_squad) > 1 else None
         
         return captain, vice_captain
+
+    def suggest_chip_usage(self):
+        """
+        Analyzes the squad and game state to recommend a chip (Wildcard, Bench Boost, etc.).
+        Returns a dictionary with the chip recommendation or None.
+        """
+        # --- 1. Wildcard Logic ---
+        WILDCARD_SCORE_GAIN_THRESHOLD = 25.0
+        
+        print("\n--- Chip Analysis: Wildcard ---")
+        
+        # Calculate current squad's total score
+        current_squad_score = sum(self._calculate_ai_score(p) for p in self.user_squad)
+        print(f"Current Squad Total AI Score: {current_squad_score:.2f}")
+
+        # Build an optimal squad to compare against
+        print("Running Genetic Algorithm to find optimal wildcard squad...")
+        wildcard_builder = GeneticSquadBuilder(
+            players=self.all_players,
+            population_size=150, # Smaller values for faster analysis
+            generations=50,
+            mutation_rate=0.2
+        )
+        ideal_squad = wildcard_builder.run()
+        
+        # Pre-calculate AI scores for the ideal squad before summing them up
+        for player in ideal_squad:
+            player['ai_score'] = self._calculate_ai_score(player)
+            
+        ideal_squad_score = sum(p.get('ai_score', 0) for p in ideal_squad)
+        
+        score_gain = ideal_squad_score - current_squad_score
+        
+        print(f"Optimal Wildcard Squad Score: {ideal_squad_score:.2f}")
+        print(f"Potential Score Gain: {score_gain:.2f} (Threshold: {WILDCARD_SCORE_GAIN_THRESHOLD})")
+
+        if score_gain >= WILDCARD_SCORE_GAIN_THRESHOLD:
+            print("WILDCARD SUGGESTION TRIGGERED")
+            return {
+                "chip": "Wildcard",
+                "reason": f"Your squad's potential is significantly lower than an optimal squad. Playing your Wildcard could boost your team's total AI Score by an estimated {score_gain:.1f} points.",
+                "details": {
+                    "current_squad_score": current_squad_score,
+                    "potential_squad_score": ideal_squad_score,
+                    "suggested_squad": ideal_squad
+                }
+            }
+
+        # --- 2. Bench Boost Logic ---
+        BENCH_BOOST_TOTAL_SCORE_THRESHOLD = 15.0
+        BENCH_BOOST_MIN_PLAYER_SCORE_THRESHOLD = 3.0
+
+        starting_11, bench = self._get_starting_11(self.user_squad)
+        
+        bench_scores = [p.get('ai_score', 0) for p in bench]
+        total_bench_score = sum(bench_scores)
+        min_bench_score = min(bench_scores) if bench_scores else 0
+        
+        print(f"\n--- Chip Analysis: Bench Boost ---")
+        print(f"Total Bench Score: {total_bench_score:.2f} (Threshold: {BENCH_BOOST_TOTAL_SCORE_THRESHOLD})")
+        print(f"Lowest Player Score on Bench: {min_bench_score:.2f} (Threshold: {BENCH_BOOST_MIN_PLAYER_SCORE_THRESHOLD})")
+
+        if total_bench_score >= BENCH_BOOST_TOTAL_SCORE_THRESHOLD and min_bench_score >= BENCH_BOOST_MIN_PLAYER_SCORE_THRESHOLD:
+            print("BENCH BOOST SUGGESTION TRIGGERED")
+            return {
+                "chip": "Bench Boost",
+                "reason": f"Your bench has a combined AI Score of {total_bench_score:.1f}, and all players have strong individual scores. This is a great week to play your Bench Boost.",
+                "details": {
+                    "total_bench_score": total_bench_score,
+                    "min_bench_score": min_bench_score
+                }
+            }
+
+        # --- 3. Triple Captain Logic ---
+        TRIPLE_CAPTAIN_SCORE_THRESHOLD = 7.5
+        
+        captain, _ = self.suggest_captain()
+        if captain:
+            captain_fixtures = self._get_player_fixture_count(captain)
+            captain_score = self._calculate_ai_score(captain)
+            
+            print(f"\n--- Chip Analysis: Triple Captain ---")
+            print(f"Captain: {captain.get('web_name')}, AI Score: {captain_score:.2f} (Threshold: {TRIPLE_CAPTAIN_SCORE_THRESHOLD})")
+            print(f"Fixtures in upcoming gameweek: {captain_fixtures}")
+
+            if captain_score >= TRIPLE_CAPTAIN_SCORE_THRESHOLD and captain_fixtures >= 2:
+                print("TRIPLE CAPTAIN SUGGESTION TRIGGERED")
+                return {
+                    "chip": "Triple Captain",
+                    "reason": f"{captain.get('web_name')} has an exceptionally high AI score of {captain_score:.1f} and plays twice this gameweek, making it a prime opportunity for Triple Captain.",
+                     "details": {
+                        "player_name": captain.get('web_name'),
+                        "ai_score": captain_score,
+                        "fixture_count": captain_fixtures
+                    }
+                }
+
+        # More chip logic will be added here later.
+        return None
 
     def _find_potential_replacements(self, player_out: Dict[str, Any], budget: float, excluded_ids: set) -> List[Dict[str, Any]]:
         """
@@ -713,7 +869,7 @@ class SquadAnalyzer:
         squad_with_value = []
         for p in self.user_squad:
             cost = p.get('now_cost', 1)
-            score = p.get('ai_score', 0)
+            score = self._calculate_ai_score(p)
             value = score / (cost / 10) if cost > 0 else 0
             squad_with_value.append({**p, 'value': value})
         

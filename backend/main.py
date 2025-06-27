@@ -367,6 +367,7 @@ async def analyze_squad_endpoint(squad_data: Squad):
         captain, vice_captain = analyzer.suggest_captain()
         transfers = await analyzer.suggest_transfers(reasoning_generator=generate_transfer_reasoning)
         double_transfer = await analyzer.suggest_double_transfers(reasoning_generator=generate_transfer_reasoning)
+        chip_suggestion = analyzer.suggest_chip_usage()
         
         # Convert transfers to TransferSuggestion objects
         transfer_suggestions = []
@@ -393,7 +394,8 @@ async def analyze_squad_endpoint(squad_data: Squad):
             "captain_suggestion": captain,
             "vice_captain_suggestion": vice_captain,
             "suggested_transfers": transfer_suggestions,
-            "double_transfer_suggestion": double_transfer_suggestion
+            "double_transfer_suggestion": double_transfer_suggestion,
+            "chip_suggestion": chip_suggestion
         }
     except Exception as e:
         # Log the exception for debugging
